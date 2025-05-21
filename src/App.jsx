@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './context/AuthContext';
@@ -86,6 +88,18 @@ function App() {
               } />
             </Routes>
             <Footer />
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
           </div>
         </FinanceProvider>
       </AuthProvider>
