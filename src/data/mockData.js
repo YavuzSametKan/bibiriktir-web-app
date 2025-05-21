@@ -73,7 +73,7 @@ export const transactions = [
     amount: 1200,
     categoryId: 9,
     accountType: 'credit-card',
-    date: '2025-05-25T16:45:00',
+    date: '2025-05-20T16:45:00',
     description: 'Yazlık kıyafet alışverişi'
   },
   {
@@ -82,7 +82,7 @@ export const transactions = [
     amount: 2000,
     categoryId: 5,
     accountType: 'bank',
-    date: '2025-05-28T11:30:00',
+    date: '2025-05-21T11:30:00',
     description: 'Freelance proje ödemesi'
   },
 

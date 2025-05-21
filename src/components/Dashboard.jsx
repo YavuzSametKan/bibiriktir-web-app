@@ -12,34 +12,20 @@ function Dashboard({ transactions }) {
   }, [transactions]);
 
   const currentMonth = useMemo(() => {
-    const now = new Date();
-    const currentMonth = getMonth(now);
-    const currentYear = getYear(now);
-    
-    console.log('Current Month Info:', {
-      month: currentMonth,
-      year: currentYear
-    });
-    
     const filteredTransactions = transactions.filter(t => {
       const transactionDate = parseISO(t.date);
       const transactionMonth = getMonth(transactionDate);
       const transactionYear = getYear(transactionDate);
       
-      const isInRange = transactionMonth === currentMonth && transactionYear === currentYear;
-      
       console.log('Transaction Check:', {
         transactionDate: format(transactionDate, 'yyyy-MM-dd'),
         transactionMonth,
         transactionYear,
-        currentMonth,
-        currentYear,
-        isInRange,
         amount: t.amount,
         type: t.type
       });
       
-      return isInRange;
+      return true; // Tüm işlemler zaten filtrelenmiş olarak geliyor
     });
 
     console.log('Filtered Current Month Transactions:', filteredTransactions);
@@ -47,39 +33,17 @@ function Dashboard({ transactions }) {
   }, [transactions]);
 
   const previousMonth = useMemo(() => {
-    const now = new Date();
-    const prevMonth = subMonths(now, 1);
+    const prevMonth = subMonths(new Date(), 1);
     const prevMonthNum = getMonth(prevMonth);
     const prevYear = getYear(prevMonth);
     
-    console.log('Previous Month Info:', {
-      month: prevMonthNum,
-      year: prevYear
-    });
-    
-    const filteredTransactions = transactions.filter(t => {
+    return transactions.filter(t => {
       const transactionDate = parseISO(t.date);
       const transactionMonth = getMonth(transactionDate);
       const transactionYear = getYear(transactionDate);
       
-      const isInRange = transactionMonth === prevMonthNum && transactionYear === prevYear;
-      
-      console.log('Previous Month Transaction Check:', {
-        transactionDate: format(transactionDate, 'yyyy-MM-dd'),
-        transactionMonth,
-        transactionYear,
-        prevMonth: prevMonthNum,
-        prevYear,
-        isInRange,
-        amount: t.amount,
-        type: t.type
-      });
-      
-      return isInRange;
+      return transactionMonth === prevMonthNum && transactionYear === prevYear;
     });
-
-    console.log('Filtered Previous Month Transactions:', filteredTransactions);
-    return filteredTransactions;
   }, [transactions]);
 
   const currentMonthIncome = useMemo(() => {

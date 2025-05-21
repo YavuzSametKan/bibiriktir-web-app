@@ -6,6 +6,8 @@ import AddTransactionButton from './components/AddTransactionButton';
 import CategoryManagementButton from './components/CategoryManagementButton';
 import TransactionModal from './components/TransactionModal';
 import CategoryModal from './components/CategoryModal';
+import MonthSelector from './components/MonthSelector';
+import { format, getMonth, getYear } from 'date-fns';
 
 function App() {
   const [categories, setCategories] = useState(initialCategories);
@@ -13,6 +15,19 @@ function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const filteredTransactions = transactions.filter(t => {
+    const transactionDate = new Date(t.date);
+    return (
+      getMonth(transactionDate) === getMonth(selectedDate) &&
+      getYear(transactionDate) === getYear(selectedDate)
+    );
+  });
+
+  const handleMonthChange = (newDate) => {
+    setSelectedDate(newDate);
+  };
 
   useEffect(() => {
     console.log('App - Initial Transactions:', transactions);
@@ -54,16 +69,24 @@ function App() {
           <CategoryManagementButton onClick={() => setIsCategoryModalOpen(true)} />
         </div>
 
-        <Dashboard transactions={transactions} />
+        <MonthSelector onMonthChange={handleMonthChange} />
 
-        <TransactionList
-          transactions={transactions}
-          categories={categories}
-          onTransactionClick={(transaction) => {
-            setSelectedTransaction(transaction);
-            setIsTransactionModalOpen(true);
-          }}
-        />
+        <Dashboard transactions={filteredTransactions} />
+
+        {filteredTransactions.length > 0 ? (
+          <TransactionList
+            transactions={filteredTransactions}
+            categories={categories}
+            onTransactionClick={(transaction) => {
+              setSelectedTransaction(transaction);
+              setIsTransactionModalOpen(true);
+            }}
+          />
+        ) : (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
+          </div>
+        )}
 
         <AddTransactionButton onClick={() => {
           setSelectedTransaction(null);

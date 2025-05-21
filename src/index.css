@@ -1,3 +1,62 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Geçiş animasyonları */
+.fade-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Ay seçici animasyonları */
+.month-selector-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.month-selector-button:hover {
+  transform: scale(1.05);
+}
+
+.month-selector-button:active {
+  transform: scale(0.95);
+}
+
+/* İşlem listesi animasyonları */
+.transaction-list-enter {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.transaction-list-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.transaction-list-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.transaction-list-exit-active {
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 300ms, transform 300ms;
+}
