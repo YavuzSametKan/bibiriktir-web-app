@@ -1,13 +1,16 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 function Navbar() {
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   return (
-    <div className="sticky top-0 z-50 bg-white shadow">
+    <nav className="bg-white shadow-sm z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Sol taraf - Logo ve Navigasyon */}
@@ -90,7 +93,7 @@ function Navbar() {
           </Menu>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }
 
