@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, subMonths, getMonth, getYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
-import { Line } from 'react-chartjs-2';
+import { Line, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +12,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement,
 } from 'chart.js';
 
 ChartJS.register(
@@ -21,11 +22,12 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
-function Dashboard({ transactions, selectedDate }) {
-  const [showChart, setShowChart] = useState(false);
+function Dashboard({ transactions, selectedDate, categories }) {
+  const [showCharts, setShowCharts] = useState(false);
 
   const {
     currentMonthIncome,
@@ -34,7 +36,9 @@ function Dashboard({ transactions, selectedDate }) {
     previousMonthExpense,
     incomeChange,
     expenseChange,
-    chartData
+    lineChartData,
+    incomePieData,
+    expensePieData
   } = useMemo(() => {
     // Seçili ayın işlemleri
     const currentMonthTransactions = transactions.filter(transaction => {
@@ -82,8 +86,8 @@ function Dashboard({ transactions, selectedDate }) {
       ? 0 
       : ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100;
 
-    // Grafik verilerini hazırla
-    const chartData = {
+    // Çizgi grafik verilerini hazırla
+    const lineChartData = {
       labels: Array.from({ length: 31 }, (_, i) => i + 1),
       datasets: [
         {
@@ -107,11 +111,75 @@ function Dashboard({ transactions, selectedDate }) {
     currentMonthTransactions.forEach(transaction => {
       const day = new Date(transaction.date).getDate() - 1;
       if (transaction.type === 'income') {
-        chartData.datasets[0].data[day] += transaction.amount;
+        lineChartData.datasets[0].data[day] += transaction.amount;
       } else {
-        chartData.datasets[1].data[day] += transaction.amount;
+        lineChartData.datasets[1].data[day] += transaction.amount;
       }
     });
+
+    // Gelir kategorilerine göre grupla
+    const incomeByCategory = currentMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((acc, t) => {
+        const category = categories.find(c => c.id === t.categoryId);
+        if (category) {
+          acc[category.name] = (acc[category.name] || 0) + t.amount;
+        }
+        return acc;
+      }, {});
+
+    // Gider kategorilerine göre grupla
+    const expenseByCategory = currentMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((acc, t) => {
+        const category = categories.find(c => c.id === t.categoryId);
+        if (category) {
+          acc[category.name] = (acc[category.name] || 0) + t.amount;
+        }
+        return acc;
+      }, {});
+
+    // Gelir pasta grafiği verilerini hazırla
+    const incomePieData = {
+      labels: Object.keys(incomeByCategory),
+      datasets: [{
+        data: Object.values(incomeByCategory),
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.8)',  // Mavi
+          'rgba(255, 206, 86, 0.8)',  // Sarı
+          'rgba(75, 192, 192, 0.8)',  // Turkuaz
+          'rgba(153, 102, 255, 0.8)', // Mor
+          'rgba(255, 159, 64, 0.8)',  // Turuncu
+          'rgba(199, 199, 199, 0.8)', // Gri
+          'rgba(83, 102, 255, 0.8)',  // Lacivert
+          'rgba(40, 159, 64, 0.8)',   // Koyu Yeşil
+          'rgba(210, 199, 199, 0.8)', // Açık Gri
+          'rgba(78, 205, 196, 0.8)',  // Açık Turkuaz
+        ],
+        borderWidth: 1,
+      }],
+    };
+
+    // Gider pasta grafiği verilerini hazırla
+    const expensePieData = {
+      labels: Object.keys(expenseByCategory),
+      datasets: [{
+        data: Object.values(expenseByCategory),
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.8)',  // Mavi
+          'rgba(255, 206, 86, 0.8)',  // Sarı
+          'rgba(75, 192, 192, 0.8)',  // Turkuaz
+          'rgba(153, 102, 255, 0.8)', // Mor
+          'rgba(255, 159, 64, 0.8)',  // Turuncu
+          'rgba(199, 199, 199, 0.8)', // Gri
+          'rgba(83, 102, 255, 0.8)',  // Lacivert
+          'rgba(40, 159, 64, 0.8)',   // Koyu Yeşil
+          'rgba(210, 199, 199, 0.8)', // Açık Gri
+          'rgba(78, 205, 196, 0.8)',  // Açık Turkuaz
+        ],
+        borderWidth: 1,
+      }],
+    };
 
     return {
       currentMonthIncome,
@@ -120,9 +188,11 @@ function Dashboard({ transactions, selectedDate }) {
       previousMonthExpense,
       incomeChange,
       expenseChange,
-      chartData
+      lineChartData,
+      incomePieData,
+      expensePieData
     };
-  }, [transactions, selectedDate]);
+  }, [transactions, selectedDate, categories]);
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -167,35 +237,139 @@ function Dashboard({ transactions, selectedDate }) {
       </div>
 
       <button
-        onClick={() => setShowChart(!showChart)}
+        onClick={() => setShowCharts(!showCharts)}
         className="flex items-center justify-center w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors mb-4"
       >
         <ChartBarIcon className="h-5 w-5 mr-2" />
-        {showChart ? 'Grafiği Gizle' : 'Grafiği Göster'}
+        {showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
       </button>
 
-      {showChart && (
-        <div className="h-64">
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'top',
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
+      {showCharts && (
+        <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out">
+          <div className="h-64">
+            <Line
+              data={lineChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
                   },
                 },
-              },
-            }}
-          />
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.keys(incomePieData.labels).length > 0 ? (
+              <div className="h-80 flex flex-col items-center">
+                <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
+                <div className="w-80 h-80">
+                  <Pie
+                    data={incomePieData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: true,
+                          position: 'right',
+                          labels: {
+                            padding: 8,
+                            font: {
+                              size: 13
+                            }
+                          }
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) => {
+                              const value = context.raw;
+                              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                              const percentage = ((value / total) * 100).toFixed(1);
+                              return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                            },
+                          },
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          padding: 8,
+                          titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                          },
+                          bodyFont: {
+                            size: 13
+                          }
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
+              </div>
+            )}
+
+            {Object.keys(expensePieData.labels).length > 0 ? (
+              <div className="h-80 flex flex-col items-center">
+                <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
+                <div className="w-80 h-80">
+                  <Pie
+                    data={expensePieData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: true,
+                          position: 'right',
+                          labels: {
+                            padding: 8,
+                            font: {
+                              size: 13
+                            }
+                          }
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) => {
+                              const value = context.raw;
+                              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                              const percentage = ((value / total) * 100).toFixed(1);
+                              return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                            },
+                          },
+                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                          padding: 8,
+                          titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                          },
+                          bodyFont: {
+                            size: 13
+                          }
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

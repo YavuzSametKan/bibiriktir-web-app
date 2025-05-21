@@ -71,7 +71,7 @@ function App() {
 
         <MonthSelector onMonthChange={handleMonthChange} />
 
-        <Dashboard transactions={transactions} selectedDate={selectedDate} />
+        <Dashboard transactions={transactions} selectedDate={selectedDate} categories={categories} />
 
         {filteredTransactions.length > 0 ? (
           <TransactionList
