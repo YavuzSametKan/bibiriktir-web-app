@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, subMonths, getMonth, getYear } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { getMonth, getYear, subMonths } from 'date-fns';
 import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
 import { Line, Pie } from 'react-chartjs-2';
 import {
@@ -14,6 +13,13 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
+import MonthSelector from '../components/dashboard/MonthSelector';
+import TransactionList from '../components/dashboard/TransactionList';
+import AddTransactionButton from '../components/common/AddTransactionButton';
+import CategoryManagementButton from '../components/common/CategoryManagementButton';
+import TransactionModal from '../components/common/TransactionModal';
+import CategoryModal from '../components/common/CategoryModal';
+import { useFinance } from '../context/FinanceContext';
 
 ChartJS.register(
   CategoryScale,
@@ -26,7 +32,25 @@ ChartJS.register(
   ArcElement
 );
 
-function Dashboard({ transactions, selectedDate, categories }) {
+function DashboardPage() {
+  const {
+    transactions,
+    categories,
+    isTransactionModalOpen,
+    setIsTransactionModalOpen,
+    isCategoryModalOpen,
+    setIsCategoryModalOpen,
+    selectedTransaction,
+    setSelectedTransaction,
+    handleAddTransaction,
+    handleUpdateTransaction,
+    handleDeleteTransaction,
+    handleAddCategory,
+    handleUpdateCategory,
+    handleDeleteCategory
+  } = useFinance();
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCharts, setShowCharts] = useState(false);
 
   const {
@@ -40,7 +64,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
     incomePieData,
     expensePieData
   } = useMemo(() => {
-    // Seçili ayın işlemleri
     const currentMonthTransactions = transactions.filter(transaction => {
       const transactionDate = new Date(transaction.date);
       return (
@@ -49,7 +72,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       );
     });
 
-    // Önceki ayın işlemleri
     const previousMonthDate = subMonths(selectedDate, 1);
     const previousMonthTransactions = transactions.filter(transaction => {
       const transactionDate = new Date(transaction.date);
@@ -59,7 +81,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       );
     });
 
-    // Seçili ayın toplam gelir ve giderleri
     const currentMonthIncome = currentMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -68,7 +89,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Önceki ayın toplam gelir ve giderleri
     const previousMonthIncome = previousMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -77,7 +97,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Yüzde değişimleri hesapla
     const incomeChange = previousMonthIncome === 0 
       ? 0 
       : ((currentMonthIncome - previousMonthIncome) / previousMonthIncome) * 100;
@@ -86,7 +105,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       ? 0 
       : ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100;
 
-    // Çizgi grafik verilerini hazırla
     const lineChartData = {
       labels: Array.from({ length: 31 }, (_, i) => i + 1),
       datasets: [
@@ -107,7 +125,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       ],
     };
 
-    // Günlük gelir ve giderleri hesapla
     currentMonthTransactions.forEach(transaction => {
       const day = new Date(transaction.date).getDate() - 1;
       if (transaction.type === 'income') {
@@ -117,7 +134,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
       }
     });
 
-    // Gelir kategorilerine göre grupla
     const incomeByCategory = currentMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((acc, t) => {
@@ -128,7 +144,6 @@ function Dashboard({ transactions, selectedDate, categories }) {
         return acc;
       }, {});
 
-    // Gider kategorilerine göre grupla
     const expenseByCategory = currentMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((acc, t) => {
@@ -139,43 +154,41 @@ function Dashboard({ transactions, selectedDate, categories }) {
         return acc;
       }, {});
 
-    // Gelir pasta grafiği verilerini hazırla
     const incomePieData = {
       labels: Object.keys(incomeByCategory),
       datasets: [{
         data: Object.values(incomeByCategory),
         backgroundColor: [
-          'rgba(54, 162, 235, 0.8)',  // Mavi
-          'rgba(255, 206, 86, 0.8)',  // Sarı
-          'rgba(75, 192, 192, 0.8)',  // Turkuaz
-          'rgba(153, 102, 255, 0.8)', // Mor
-          'rgba(255, 159, 64, 0.8)',  // Turuncu
-          'rgba(199, 199, 199, 0.8)', // Gri
-          'rgba(83, 102, 255, 0.8)',  // Lacivert
-          'rgba(40, 159, 64, 0.8)',   // Koyu Yeşil
-          'rgba(210, 199, 199, 0.8)', // Açık Gri
-          'rgba(78, 205, 196, 0.8)',  // Açık Turkuaz
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)',
+          'rgba(199, 199, 199, 0.8)',
+          'rgba(83, 102, 255, 0.8)',
+          'rgba(40, 159, 64, 0.8)',
+          'rgba(210, 199, 199, 0.8)',
+          'rgba(78, 205, 196, 0.8)',
         ],
         borderWidth: 1,
       }],
     };
 
-    // Gider pasta grafiği verilerini hazırla
     const expensePieData = {
       labels: Object.keys(expenseByCategory),
       datasets: [{
         data: Object.values(expenseByCategory),
         backgroundColor: [
-          'rgba(54, 162, 235, 0.8)',  // Mavi
-          'rgba(255, 206, 86, 0.8)',  // Sarı
-          'rgba(75, 192, 192, 0.8)',  // Turkuaz
-          'rgba(153, 102, 255, 0.8)', // Mor
-          'rgba(255, 159, 64, 0.8)',  // Turuncu
-          'rgba(199, 199, 199, 0.8)', // Gri
-          'rgba(83, 102, 255, 0.8)',  // Lacivert
-          'rgba(40, 159, 64, 0.8)',   // Koyu Yeşil
-          'rgba(210, 199, 199, 0.8)', // Açık Gri
-          'rgba(78, 205, 196, 0.8)',  // Açık Turkuaz
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 206, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)',
+          'rgba(199, 199, 199, 0.8)',
+          'rgba(83, 102, 255, 0.8)',
+          'rgba(40, 159, 64, 0.8)',
+          'rgba(210, 199, 199, 0.8)',
+          'rgba(78, 205, 196, 0.8)',
         ],
         borderWidth: 1,
       }],
@@ -194,10 +207,29 @@ function Dashboard({ transactions, selectedDate, categories }) {
     };
   }, [transactions, selectedDate, categories]);
 
+  const filteredTransactions = transactions.filter(t => {
+    const transactionDate = new Date(t.date);
+    return (
+      getMonth(transactionDate) === getMonth(selectedDate) &&
+      getYear(transactionDate) === getYear(selectedDate)
+    );
+  });
+
+  const handleMonthChange = (newDate) => {
+    setSelectedDate(newDate);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Kişisel Finans</h1>
+        <CategoryManagementButton onClick={() => setIsCategoryModalOpen(true)} />
+      </div>
+
+      <MonthSelector onMonthChange={handleMonthChange} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-green-50 rounded-lg p-6">
+        <div className="bg-green-50 rounded-lg p-6 shadow">
           <h3 className="text-lg font-medium text-green-800 mb-2">Toplam Gelir</h3>
           <div className="text-3xl font-bold text-green-600 mb-2">
             {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
@@ -216,7 +248,7 @@ function Dashboard({ transactions, selectedDate, categories }) {
           </div>
         </div>
 
-        <div className="bg-red-50 rounded-lg p-6">
+        <div className="bg-red-50 rounded-lg p-6 shadow">
           <h3 className="text-lg font-medium text-red-800 mb-2">Toplam Gider</h3>
           <div className="text-3xl font-bold text-red-600 mb-2">
             {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
@@ -238,15 +270,15 @@ function Dashboard({ transactions, selectedDate, categories }) {
 
       <button
         onClick={() => setShowCharts(!showCharts)}
-        className="flex items-center justify-center w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors mb-4"
+        className="flex items-center justify-center w-full py-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-colors mb-4 shadow"
       >
         <ChartBarIcon className="h-5 w-5 mr-2" />
         {showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
       </button>
 
       {showCharts && (
-        <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out">
-          <div className="h-64">
+        <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out mb-8">
+          <div className="h-64 bg-white rounded-lg p-4 shadow">
             <Line
               data={lineChartData}
               options={{
@@ -271,7 +303,7 @@ function Dashboard({ transactions, selectedDate, categories }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.keys(incomePieData.labels).length > 0 ? (
-              <div className="h-80 flex flex-col items-center">
+              <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
                 <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
                 <div className="w-80 h-80">
                   <Pie
@@ -315,13 +347,13 @@ function Dashboard({ transactions, selectedDate, categories }) {
                 </div>
               </div>
             ) : (
-              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+              <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
                 <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
               </div>
             )}
 
             {Object.keys(expensePieData.labels).length > 0 ? (
-              <div className="h-80 flex flex-col items-center">
+              <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
                 <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
                 <div className="w-80 h-80">
                   <Pie
@@ -365,15 +397,57 @@ function Dashboard({ transactions, selectedDate, categories }) {
                 </div>
               </div>
             ) : (
-              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+              <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
                 <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
               </div>
             )}
           </div>
         </div>
       )}
+
+      {filteredTransactions.length > 0 ? (
+        <TransactionList
+          transactions={filteredTransactions}
+          categories={categories}
+          onTransactionClick={(transaction) => {
+            setSelectedTransaction(transaction);
+            setIsTransactionModalOpen(true);
+          }}
+        />
+      ) : (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
+        </div>
+      )}
+
+      <AddTransactionButton onClick={() => {
+        setSelectedTransaction(null);
+        setIsTransactionModalOpen(true);
+      }} />
+
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        onClose={() => {
+          setIsTransactionModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        categories={categories}
+        transaction={selectedTransaction}
+        onAdd={handleAddTransaction}
+        onUpdate={handleUpdateTransaction}
+        onDelete={handleDeleteTransaction}
+      />
+
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        categories={categories}
+        onAdd={handleAddCategory}
+        onUpdate={handleUpdateCategory}
+        onDelete={handleDeleteCategory}
+      />
     </div>
   );
 }
 
-export default Dashboard; 
+export default DashboardPage; 
