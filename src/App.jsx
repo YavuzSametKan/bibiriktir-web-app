@@ -1,18 +1,79 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { FinanceProvider } from './context/FinanceContext';
+import { AuthProvider } from './context/AuthContext';
 import DashboardPage from './pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import { useAuth } from './context/AuthContext';
+
+// Korumalı Route bileşeni
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+// Layout bileşeni
+function Layout({ children }) {
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {children}
+    </div>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <FinanceProvider>
-        <div className="min-h-screen bg-gray-100">
+      <AuthProvider>
+        <FinanceProvider>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            {/* Gelecekte eklenecek sayfalar için route'lar buraya eklenecek */}
+            {/* Public Routes */}
+            <Route path="/login" element={
+              <Layout>
+                <LoginPage />
+              </Layout>
+            } />
+
+            {/* Protected Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout>
+                  <DashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            {/* Gelecekte eklenecek korumalı sayfalar için örnek */}
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Layout>
+                  {/* <ReportsPage /> */}
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <h1 className="text-3xl font-bold text-gray-900">Raporlar</h1>
+                    <p className="mt-4 text-gray-600">Bu sayfa yapım aşamasındadır.</p>
+                  </div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            {/* 404 Sayfası */}
+            <Route path="*" element={
+              <Layout>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-900">404</h1>
+                    <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
+                  </div>
+                </div>
+              </Layout>
+            } />
           </Routes>
-        </div>
-      </FinanceProvider>
+        </FinanceProvider>
+      </AuthProvider>
     </Router>
   );
 }
