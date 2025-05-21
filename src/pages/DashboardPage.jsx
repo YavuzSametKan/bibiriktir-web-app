@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { getMonth, getYear, subMonths } from 'date-fns';
-import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { getMonth, getYear, subMonths, addMonths } from 'date-fns';
+import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Line, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,6 +20,9 @@ import CategoryManagementButton from '../components/common/CategoryManagementBut
 import TransactionModal from '../components/common/TransactionModal';
 import CategoryModal from '../components/common/CategoryModal';
 import { useFinance } from '../context/FinanceContext';
+import Navbar from '../components/common/Navbar';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 ChartJS.register(
   CategoryScale,
@@ -215,222 +218,257 @@ function DashboardPage() {
     );
   });
 
-  const handleMonthChange = (newDate) => {
-    setSelectedDate(newDate);
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Kişisel Finans</h1>
-        <CategoryManagementButton onClick={() => setIsCategoryModalOpen(true)} />
-      </div>
-
-      <MonthSelector onMonthChange={handleMonthChange} />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-green-50 rounded-lg p-6 shadow">
-          <h3 className="text-lg font-medium text-green-800 mb-2">Toplam Gelir</h3>
-          <div className="text-3xl font-bold text-green-600 mb-2">
-            {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {format(selectedDate, 'MMMM yyyy', { locale: tr })}
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedDate(subMonths(selectedDate, 1))}
+                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setSelectedDate(new Date())}
+                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors"
+              >
+                Bu Ay
+              </button>
+              <button
+                onClick={() => setSelectedDate(addMonths(selectedDate, 1))}
+                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center text-sm">
-            <span className={`font-medium ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
-            </span>
-            {incomeChange !== 0 && (
-              incomeChange > 0 ? (
-                <ArrowUpIcon className="h-4 w-4 ml-1 text-green-600" />
-              ) : (
-                <ArrowDownIcon className="h-4 w-4 ml-1 text-red-600" />
-              )
-            )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-green-50 rounded-lg p-6 shadow">
+            <h3 className="text-lg font-medium text-green-800 mb-2">Toplam Gelir</h3>
+            <div className="text-3xl font-bold text-green-600 mb-2">
+              {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+            </div>
+            <div className="flex items-center text-sm">
+              <span className={`font-medium ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
+              </span>
+              {incomeChange !== 0 && (
+                incomeChange > 0 ? (
+                  <ArrowUpIcon className="h-4 w-4 ml-1 text-green-600" />
+                ) : (
+                  <ArrowDownIcon className="h-4 w-4 ml-1 text-red-600" />
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-6 shadow">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Toplam Gider</h3>
+            <div className="text-3xl font-bold text-red-600 mb-2">
+              {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+            </div>
+            <div className="flex items-center text-sm">
+              <span className={`font-medium ${expenseChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
+              </span>
+              {expenseChange !== 0 && (
+                expenseChange > 0 ? (
+                  <ArrowUpIcon className="h-4 w-4 ml-1 text-red-600" />
+                ) : (
+                  <ArrowDownIcon className="h-4 w-4 ml-1 text-green-600" />
+                )
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-red-50 rounded-lg p-6 shadow">
-          <h3 className="text-lg font-medium text-red-800 mb-2">Toplam Gider</h3>
-          <div className="text-3xl font-bold text-red-600 mb-2">
-            {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-          </div>
-          <div className="flex items-center text-sm">
-            <span className={`font-medium ${expenseChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
-            </span>
-            {expenseChange !== 0 && (
-              expenseChange > 0 ? (
-                <ArrowUpIcon className="h-4 w-4 ml-1 text-red-600" />
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Grafikler</h2>
+            <button
+              onClick={() => setShowCharts(!showCharts)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+            >
+              {showCharts ? (
+                <>
+                  <ChartBarIcon className="h-5 w-5" />
+                  Grafikleri Gizle
+                </>
               ) : (
-                <ArrowDownIcon className="h-4 w-4 ml-1 text-green-600" />
-              )
-            )}
+                <>
+                  <ChartBarIcon className="h-5 w-5" />
+                  Grafikleri Göster
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      </div>
-
-      <button
-        onClick={() => setShowCharts(!showCharts)}
-        className="flex items-center justify-center w-full py-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-colors mb-4 shadow"
-      >
-        <ChartBarIcon className="h-5 w-5 mr-2" />
-        {showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
-      </button>
-
-      {showCharts && (
-        <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out mb-8">
-          <div className="h-64 bg-white rounded-lg p-4 shadow">
-            <Line
-              data={lineChartData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top',
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
+          {showCharts && (
+            <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out mb-8">
+              <div className="h-64 bg-white rounded-lg p-4 shadow">
+                <Line
+                  data={lineChartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'top',
+                      },
                     },
-                  },
-                },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.keys(incomePieData.labels).length > 0 ? (
+                  <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
+                    <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
+                    <div className="w-80 h-80">
+                      <Pie
+                        data={incomePieData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              display: true,
+                              position: 'right',
+                              labels: {
+                                padding: 8,
+                                font: {
+                                  size: 13
+                                }
+                              }
+                            },
+                            tooltip: {
+                              callbacks: {
+                                label: (context) => {
+                                  const value = context.raw;
+                                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                  const percentage = ((value / total) * 100).toFixed(1);
+                                  return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                                },
+                              },
+                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                              padding: 8,
+                              titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                              },
+                              bodyFont: {
+                                size: 13
+                              }
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
+                    <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
+                  </div>
+                )}
+
+                {Object.keys(expensePieData.labels).length > 0 ? (
+                  <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
+                    <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
+                    <div className="w-80 h-80">
+                      <Pie
+                        data={expensePieData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              display: true,
+                              position: 'right',
+                              labels: {
+                                padding: 8,
+                                font: {
+                                  size: 13
+                                }
+                              }
+                            },
+                            tooltip: {
+                              callbacks: {
+                                label: (context) => {
+                                  const value = context.raw;
+                                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                  const percentage = ((value / total) * 100).toFixed(1);
+                                  return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                                },
+                              },
+                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                              padding: 8,
+                              titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                              },
+                              bodyFont: {
+                                size: 13
+                              }
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
+                    <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold text-gray-900">İşlemler</h2>
+              <CategoryManagementButton onClick={() => setIsCategoryModalOpen(true)} />
+            </div>
+            <AddTransactionButton onClick={() => setIsTransactionModalOpen(true)} />
+          </div>
+          {filteredTransactions.length > 0 ? (
+            <TransactionList
+              transactions={filteredTransactions}
+              categories={categories}
+              onTransactionClick={(transaction) => {
+                setSelectedTransaction(transaction);
+                setIsTransactionModalOpen(true);
               }}
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.keys(incomePieData.labels).length > 0 ? (
-              <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
-                <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
-                <div className="w-80 h-80">
-                  <Pie
-                    data={incomePieData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: true,
-                          position: 'right',
-                          labels: {
-                            padding: 8,
-                            font: {
-                              size: 13
-                            }
-                          }
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (context) => {
-                              const value = context.raw;
-                              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                              const percentage = ((value / total) * 100).toFixed(1);
-                              return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
-                            },
-                          },
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                          padding: 8,
-                          titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                          },
-                          bodyFont: {
-                            size: 13
-                          }
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
-                <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
-              </div>
-            )}
-
-            {Object.keys(expensePieData.labels).length > 0 ? (
-              <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
-                <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
-                <div className="w-80 h-80">
-                  <Pie
-                    data={expensePieData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: true,
-                          position: 'right',
-                          labels: {
-                            padding: 8,
-                            font: {
-                              size: 13
-                            }
-                          }
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (context) => {
-                              const value = context.raw;
-                              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                              const percentage = ((value / total) * 100).toFixed(1);
-                              return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
-                            },
-                          },
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                          padding: 8,
-                          titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                          },
-                          bodyFont: {
-                            size: 13
-                          }
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
-                <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
+            </div>
+          )}
         </div>
-      )}
-
-      {filteredTransactions.length > 0 ? (
-        <TransactionList
-          transactions={filteredTransactions}
-          categories={categories}
-          onTransactionClick={(transaction) => {
-            setSelectedTransaction(transaction);
-            setIsTransactionModalOpen(true);
-          }}
-        />
-      ) : (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
-        </div>
-      )}
-
-      <AddTransactionButton onClick={() => {
-        setSelectedTransaction(null);
-        setIsTransactionModalOpen(true);
-      }} />
+      </div>
 
       <TransactionModal
         isOpen={isTransactionModalOpen}
-        onClose={() => {
-          setIsTransactionModalOpen(false);
-          setSelectedTransaction(null);
-        }}
+        onClose={() => setIsTransactionModalOpen(false)}
         categories={categories}
         transaction={selectedTransaction}
         onAdd={handleAddTransaction}

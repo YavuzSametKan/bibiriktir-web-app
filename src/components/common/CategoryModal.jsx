@@ -57,7 +57,7 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 <Dialog.Title
                   as="div"
-                  className="flex justify-between items-center mb-4"
+                  className="flex justify-between items-center mb-6"
                 >
                   <h3 className="text-lg font-medium leading-6 text-gray-900">
                     Kategori Yönetimi
@@ -75,21 +75,21 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                   {/* Yeni Kategori Ekleme Formu */}
                   <form onSubmit={handleAddCategory} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Yeni Kategori
                       </label>
-                      <div className="mt-1 flex rounded-md shadow-sm">
+                      <div className="flex gap-2">
                         <input
                           type="text"
                           value={newCategory.name}
                           onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                          className="block w-full rounded-l-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                           placeholder="Kategori adı"
                         />
                         <select
                           value={newCategory.type}
                           onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}
-                          className="rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                         >
                           <option value="expense">Harcama</option>
                           <option value="income">Gelir</option>
@@ -98,7 +98,7 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                     </div>
                     <button
                       type="submit"
-                      className="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                      className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
                     >
                       Kategori Ekle
                     </button>
@@ -107,16 +107,16 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                   {/* Kategori Listesi */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-gray-900">Mevcut Kategoriler</h4>
-                    <div className="space-y-2">
+                    <div className="max-h-[300px] overflow-y-auto space-y-3 pr-1">
                       {categories.map((category) => (
                         <div
                           key={category.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                         >
                           {editingCategory?.id === category.id ? (
                             <form
                               onSubmit={handleUpdateCategory}
-                              className="flex-1 flex items-center space-x-2"
+                              className="flex-1 flex flex-wrap items-center gap-2"
                             >
                               <input
                                 type="text"
@@ -124,31 +124,33 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                                 onChange={(e) =>
                                   setEditingCategory({ ...editingCategory, name: e.target.value })
                                 }
-                                className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                className="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                               />
                               <select
                                 value={editingCategory.type}
                                 onChange={(e) =>
                                   setEditingCategory({ ...editingCategory, type: e.target.value })
                                 }
-                                className="rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                className="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                               >
                                 <option value="expense">Harcama</option>
                                 <option value="income">Gelir</option>
                               </select>
-                              <button
-                                type="submit"
-                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                              >
-                                Kaydet
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingCategory(null)}
-                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                              >
-                                İptal
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+                                >
+                                  Kaydet
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCategory(null)}
+                                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                                >
+                                  İptal
+                                </button>
+                              </div>
                             </form>
                           ) : (
                             <>
@@ -160,16 +162,16 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                                   ({category.type === 'expense' ? 'Harcama' : 'Gelir'})
                                 </span>
                               </div>
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => setEditingCategory(category)}
-                                  className="text-gray-400 hover:text-gray-500"
+                                  className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-200 transition-colors"
                                 >
                                   <PencilIcon className="h-5 w-5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCategory(category.id)}
-                                  className="text-gray-400 hover:text-red-500"
+                                  className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                                 >
                                   <TrashIcon className="h-5 w-5" />
                                 </button>
