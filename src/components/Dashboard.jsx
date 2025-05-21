@@ -1,164 +1,201 @@
-import { useMemo, useState, useEffect } from 'react';
-import { format, subMonths, startOfMonth, endOfMonth, parseISO, getMonth, getYear } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, startOfMonth, endOfMonth, subMonths, getMonth, getYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 
-function Dashboard({ transactions }) {
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+function Dashboard({ transactions, selectedDate }) {
   const [showChart, setShowChart] = useState(false);
 
-  useEffect(() => {
-    console.log('Dashboard - Received Transactions:', transactions);
-  }, [transactions]);
-
-  const currentMonth = useMemo(() => {
-    const filteredTransactions = transactions.filter(t => {
-      const transactionDate = parseISO(t.date);
-      const transactionMonth = getMonth(transactionDate);
-      const transactionYear = getYear(transactionDate);
-      
-      console.log('Transaction Check:', {
-        transactionDate: format(transactionDate, 'yyyy-MM-dd'),
-        transactionMonth,
-        transactionYear,
-        amount: t.amount,
-        type: t.type
-      });
-      
-      return true; // Tüm işlemler zaten filtrelenmiş olarak geliyor
+  const {
+    currentMonthIncome,
+    currentMonthExpense,
+    previousMonthIncome,
+    previousMonthExpense,
+    incomeChange,
+    expenseChange,
+    chartData
+  } = useMemo(() => {
+    // Seçili ayın işlemleri
+    const currentMonthTransactions = transactions.filter(transaction => {
+      const transactionDate = new Date(transaction.date);
+      return (
+        getMonth(transactionDate) === getMonth(selectedDate) &&
+        getYear(transactionDate) === getYear(selectedDate)
+      );
     });
 
-    console.log('Filtered Current Month Transactions:', filteredTransactions);
-    return filteredTransactions;
-  }, [transactions]);
-
-  const previousMonth = useMemo(() => {
-    const prevMonth = subMonths(new Date(), 1);
-    const prevMonthNum = getMonth(prevMonth);
-    const prevYear = getYear(prevMonth);
-    
-    return transactions.filter(t => {
-      const transactionDate = parseISO(t.date);
-      const transactionMonth = getMonth(transactionDate);
-      const transactionYear = getYear(transactionDate);
-      
-      return transactionMonth === prevMonthNum && transactionYear === prevYear;
+    // Önceki ayın işlemleri
+    const previousMonthDate = subMonths(selectedDate, 1);
+    const previousMonthTransactions = transactions.filter(transaction => {
+      const transactionDate = new Date(transaction.date);
+      return (
+        getMonth(transactionDate) === getMonth(previousMonthDate) &&
+        getYear(transactionDate) === getYear(previousMonthDate)
+      );
     });
-  }, [transactions]);
 
-  const currentMonthIncome = useMemo(() => {
-    const income = currentMonth
+    // Seçili ayın toplam gelir ve giderleri
+    const currentMonthIncome = currentMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
-    console.log('Current Month Income Calculation:', {
-      transactions: currentMonth.filter(t => t.type === 'income'),
-      total: income
-    });
-    return income;
-  }, [currentMonth]);
 
-  const currentMonthExpense = useMemo(() => {
-    const expense = currentMonth
+    const currentMonthExpense = currentMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-    console.log('Current Month Expense Calculation:', {
-      transactions: currentMonth.filter(t => t.type === 'expense'),
-      total: expense
-    });
-    return expense;
-  }, [currentMonth]);
 
-  const previousMonthIncome = useMemo(() => {
-    const income = previousMonth
+    // Önceki ayın toplam gelir ve giderleri
+    const previousMonthIncome = previousMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
-    console.log('Previous Month Income Calculation:', {
-      transactions: previousMonth.filter(t => t.type === 'income'),
-      total: income
-    });
-    return income;
-  }, [previousMonth]);
 
-  const previousMonthExpense = useMemo(() => {
-    const expense = previousMonth
+    const previousMonthExpense = previousMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-    console.log('Previous Month Expense Calculation:', {
-      transactions: previousMonth.filter(t => t.type === 'expense'),
-      total: expense
+
+    // Yüzde değişimleri hesapla
+    const incomeChange = previousMonthIncome === 0 
+      ? 0 
+      : ((currentMonthIncome - previousMonthIncome) / previousMonthIncome) * 100;
+
+    const expenseChange = previousMonthExpense === 0 
+      ? 0 
+      : ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100;
+
+    // Grafik verilerini hazırla
+    const chartData = {
+      labels: Array.from({ length: 31 }, (_, i) => i + 1),
+      datasets: [
+        {
+          label: 'Gelir',
+          data: Array(31).fill(0),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
+          tension: 0.4,
+        },
+        {
+          label: 'Gider',
+          data: Array(31).fill(0),
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.5)',
+          tension: 0.4,
+        },
+      ],
+    };
+
+    // Günlük gelir ve giderleri hesapla
+    currentMonthTransactions.forEach(transaction => {
+      const day = new Date(transaction.date).getDate() - 1;
+      if (transaction.type === 'income') {
+        chartData.datasets[0].data[day] += transaction.amount;
+      } else {
+        chartData.datasets[1].data[day] += transaction.amount;
+      }
     });
-    return expense;
-  }, [previousMonth]);
 
-  const incomeChange = previousMonthIncome ? ((currentMonthIncome - previousMonthIncome) / previousMonthIncome) * 100 : 0;
-  const expenseChange = previousMonthExpense ? ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100 : 0;
-
-  const chartData = useMemo(() => {
-    const data = [];
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dayTransactions = currentMonth.filter(t => new Date(t.date).getDate() === i);
-      const dayIncome = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-      const dayExpense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-
-      data.push({
-        date: i,
-        income: dayIncome,
-        expense: dayExpense
-      });
-    }
-
-    return data;
-  }, [currentMonth]);
+    return {
+      currentMonthIncome,
+      currentMonthExpense,
+      previousMonthIncome,
+      previousMonthExpense,
+      incomeChange,
+      expenseChange,
+      chartData
+    };
+  }, [transactions, selectedDate]);
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-red-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-red-700 mb-2">Bu Ay Harcama</h3>
-          <p className="text-2xl font-bold text-red-600">
-            {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-          </p>
-          <p className={`text-sm ${expenseChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-            {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
-          </p>
-        </div>
-
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-green-700 mb-2">Bu Ay Gelir</h3>
-          <p className="text-2xl font-bold text-green-600">
+        <div className="bg-green-50 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-green-800 mb-2">Toplam Gelir</h3>
+          <div className="text-3xl font-bold text-green-600 mb-2">
             {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-          </p>
-          <p className={`text-sm ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
-          </p>
+          </div>
+          <div className="flex items-center text-sm">
+            <span className={`font-medium ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
+            </span>
+            {incomeChange !== 0 && (
+              incomeChange > 0 ? (
+                <ArrowUpIcon className="h-4 w-4 ml-1 text-green-600" />
+              ) : (
+                <ArrowDownIcon className="h-4 w-4 ml-1 text-red-600" />
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="bg-red-50 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-red-800 mb-2">Toplam Gider</h3>
+          <div className="text-3xl font-bold text-red-600 mb-2">
+            {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+          </div>
+          <div className="flex items-center text-sm">
+            <span className={`font-medium ${expenseChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
+            </span>
+            {expenseChange !== 0 && (
+              expenseChange > 0 ? (
+                <ArrowUpIcon className="h-4 w-4 ml-1 text-red-600" />
+              ) : (
+                <ArrowDownIcon className="h-4 w-4 ml-1 text-green-600" />
+              )
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={() => setShowChart(!showChart)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <ChartBarIcon className="h-6 w-6 mr-2" />
-          {showChart ? 'Grafiği Gizle' : 'Grafiği Göster'}
-        </button>
-      </div>
+      <button
+        onClick={() => setShowChart(!showChart)}
+        className="flex items-center justify-center w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors mb-4"
+      >
+        <ChartBarIcon className="h-5 w-5 mr-2" />
+        {showChart ? 'Grafiği Gizle' : 'Grafiği Göster'}
+      </button>
 
       {showChart && (
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="income" stroke="#10B981" name="Gelir" />
-              <Line type="monotone" dataKey="expense" stroke="#EF4444" name="Harcama" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="h-64">
+          <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
+                  },
+                },
+              },
+            }}
+          />
         </div>
       )}
     </div>
