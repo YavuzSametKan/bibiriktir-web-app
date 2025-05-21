@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { categories as initialCategories, transactions as initialTransactions } from './data/mockData';
 import Dashboard from './components/Dashboard';
 import TransactionList from './components/TransactionList';
@@ -13,6 +13,10 @@ function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  useEffect(() => {
+    console.log('App - Initial Transactions:', transactions);
+  }, [transactions]);
 
   const handleAddTransaction = (transaction) => {
     setTransactions([...transactions, { ...transaction, id: Date.now() }]);

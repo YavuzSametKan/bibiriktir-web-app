@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { format, subMonths } from 'date-fns';
+import { useMemo, useState, useEffect } from 'react';
+import { format, subMonths, startOfMonth, endOfMonth, parseISO, getMonth, getYear } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
@@ -7,42 +7,124 @@ import { ChartBarIcon } from '@heroicons/react/24/outline';
 function Dashboard({ transactions }) {
   const [showChart, setShowChart] = useState(false);
 
+  useEffect(() => {
+    console.log('Dashboard - Received Transactions:', transactions);
+  }, [transactions]);
+
   const currentMonth = useMemo(() => {
     const now = new Date();
-    return transactions.filter(t => {
-      const date = new Date(t.date);
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    const currentMonth = getMonth(now);
+    const currentYear = getYear(now);
+    
+    console.log('Current Month Info:', {
+      month: currentMonth,
+      year: currentYear
     });
+    
+    const filteredTransactions = transactions.filter(t => {
+      const transactionDate = parseISO(t.date);
+      const transactionMonth = getMonth(transactionDate);
+      const transactionYear = getYear(transactionDate);
+      
+      const isInRange = transactionMonth === currentMonth && transactionYear === currentYear;
+      
+      console.log('Transaction Check:', {
+        transactionDate: format(transactionDate, 'yyyy-MM-dd'),
+        transactionMonth,
+        transactionYear,
+        currentMonth,
+        currentYear,
+        isInRange,
+        amount: t.amount,
+        type: t.type
+      });
+      
+      return isInRange;
+    });
+
+    console.log('Filtered Current Month Transactions:', filteredTransactions);
+    return filteredTransactions;
   }, [transactions]);
 
   const previousMonth = useMemo(() => {
     const now = new Date();
     const prevMonth = subMonths(now, 1);
-    return transactions.filter(t => {
-      const date = new Date(t.date);
-      return date.getMonth() === prevMonth.getMonth() && date.getFullYear() === prevMonth.getFullYear();
+    const prevMonthNum = getMonth(prevMonth);
+    const prevYear = getYear(prevMonth);
+    
+    console.log('Previous Month Info:', {
+      month: prevMonthNum,
+      year: prevYear
     });
+    
+    const filteredTransactions = transactions.filter(t => {
+      const transactionDate = parseISO(t.date);
+      const transactionMonth = getMonth(transactionDate);
+      const transactionYear = getYear(transactionDate);
+      
+      const isInRange = transactionMonth === prevMonthNum && transactionYear === prevYear;
+      
+      console.log('Previous Month Transaction Check:', {
+        transactionDate: format(transactionDate, 'yyyy-MM-dd'),
+        transactionMonth,
+        transactionYear,
+        prevMonth: prevMonthNum,
+        prevYear,
+        isInRange,
+        amount: t.amount,
+        type: t.type
+      });
+      
+      return isInRange;
+    });
+
+    console.log('Filtered Previous Month Transactions:', filteredTransactions);
+    return filteredTransactions;
   }, [transactions]);
 
-  const currentMonthIncome = useMemo(() => 
-    currentMonth.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-    [currentMonth]
-  );
+  const currentMonthIncome = useMemo(() => {
+    const income = currentMonth
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    console.log('Current Month Income Calculation:', {
+      transactions: currentMonth.filter(t => t.type === 'income'),
+      total: income
+    });
+    return income;
+  }, [currentMonth]);
 
-  const currentMonthExpense = useMemo(() => 
-    currentMonth.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
-    [currentMonth]
-  );
+  const currentMonthExpense = useMemo(() => {
+    const expense = currentMonth
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    console.log('Current Month Expense Calculation:', {
+      transactions: currentMonth.filter(t => t.type === 'expense'),
+      total: expense
+    });
+    return expense;
+  }, [currentMonth]);
 
-  const previousMonthIncome = useMemo(() => 
-    previousMonth.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-    [previousMonth]
-  );
+  const previousMonthIncome = useMemo(() => {
+    const income = previousMonth
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    console.log('Previous Month Income Calculation:', {
+      transactions: previousMonth.filter(t => t.type === 'income'),
+      total: income
+    });
+    return income;
+  }, [previousMonth]);
 
-  const previousMonthExpense = useMemo(() => 
-    previousMonth.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
-    [previousMonth]
-  );
+  const previousMonthExpense = useMemo(() => {
+    const expense = previousMonth
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    console.log('Previous Month Expense Calculation:', {
+      transactions: previousMonth.filter(t => t.type === 'expense'),
+      total: expense
+    });
+    return expense;
+  }, [previousMonth]);
 
   const incomeChange = previousMonthIncome ? ((currentMonthIncome - previousMonthIncome) / previousMonthIncome) * 100 : 0;
   const expenseChange = previousMonthExpense ? ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100 : 0;
@@ -96,7 +178,7 @@ function Dashboard({ transactions }) {
           onClick={() => setShowChart(!showChart)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          <ChartBarIcon className="h-5 w-5 mr-2" />
+          <ChartBarIcon className="h-6 w-6 mr-2" />
           {showChart ? 'Grafiği Gizle' : 'Grafiği Göster'}
         </button>
       </div>
