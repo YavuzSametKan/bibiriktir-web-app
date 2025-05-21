@@ -13,19 +13,25 @@ function TransactionList({ transactions, categories, onTransactionClick }) {
         groups[dateKey] = {
           date,
           transactions: [],
+          totalIncome: 0,
           totalExpense: 0
         };
       }
       
       groups[dateKey].transactions.push(transaction);
-      if (transaction.type === 'expense') {
+      if (transaction.type === 'income') {
+        groups[dateKey].totalIncome += transaction.amount;
+      } else {
         groups[dateKey].totalExpense += transaction.amount;
       }
     });
 
     return Object.entries(groups)
       .sort(([a], [b]) => new Date(b) - new Date(a))
-      .map(([_, group]) => group);
+      .map(([_, group]) => ({
+        ...group,
+        dailyTotal: group.totalIncome - group.totalExpense
+      }));
   }, [transactions]);
 
   const getCategoryName = (categoryId) => {
@@ -42,9 +48,26 @@ function TransactionList({ transactions, categories, onTransactionClick }) {
               <h3 className="text-lg font-semibold text-gray-900">
                 {format(group.date, 'd MMMM yyyy', { locale: tr })}
               </h3>
-              <span className="text-red-600 font-medium">
-                {group.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-              </span>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Gelir</p>
+                  <p className="text-sm font-medium text-green-600">
+                    {group.totalIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Gider</p>
+                  <p className="text-sm font-medium text-red-600">
+                    {group.totalExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Günlük Toplam</p>
+                  <p className={`text-sm font-medium ${group.dailyTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {group.dailyTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

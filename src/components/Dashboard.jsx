@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 function Dashboard({ transactions }) {
+  const [showChart, setShowChart] = useState(false);
+
   const currentMonth = useMemo(() => {
     const now = new Date();
     return transactions.filter(t => {
@@ -88,18 +91,30 @@ function Dashboard({ transactions }) {
         </div>
       </div>
 
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="income" stroke="#10B981" name="Gelir" />
-            <Line type="monotone" dataKey="expense" stroke="#EF4444" name="Harcama" />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={() => setShowChart(!showChart)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <ChartBarIcon className="h-5 w-5 mr-2" />
+          {showChart ? 'Grafiği Gizle' : 'Grafiği Göster'}
+        </button>
       </div>
+
+      {showChart && (
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="income" stroke="#10B981" name="Gelir" />
+              <Line type="monotone" dataKey="expense" stroke="#EF4444" name="Harcama" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
