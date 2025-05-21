@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './context/AuthContext';
+import StatisticsPage from './pages/StatisticsPage';
+import Navbar from './components/common/Navbar';
 
 // Korumalı Route bileşeni
 function ProtectedRoute({ children }) {
@@ -20,6 +22,7 @@ function ProtectedRoute({ children }) {
 function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gray-100">
+      <Navbar />
       {children}
     </div>
   );
@@ -43,6 +46,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <DashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/statistics" element={
+              <ProtectedRoute>
+                <Layout>
+                  <StatisticsPage />
                 </Layout>
               </ProtectedRoute>
             } />

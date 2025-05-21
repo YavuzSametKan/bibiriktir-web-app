@@ -1,19 +1,50 @@
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { Link, useLocation } from 'react-router-dom';
 
 function Navbar() {
+  const location = useLocation();
+
   return (
     <div className="sticky top-0 z-50 bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <BanknotesIcon className="h-8 w-8 text-indigo-600" />
-            <span className="text-xl font-bold text-gray-900">Bibiriktir</span>
+          {/* Sol taraf - Logo ve Navigasyon */}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2">
+              <BanknotesIcon className="h-8 w-8 text-indigo-600" />
+              <span className="text-xl font-bold text-gray-900">Bibiriktir</span>
+            </Link>
+
+            <nav className="hidden sm:flex items-center gap-4">
+              <Link
+                to="/"
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === '/'
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Ana Sayfa
+              </Link>
+              <Link
+                to="/statistics"
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === '/statistics'
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <ChartBarIcon className="h-5 w-5" />
+                  İstatistikler
+                </div>
+              </Link>
+            </nav>
           </div>
 
-          {/* Profil Menüsü */}
+          {/* Sağ taraf - Profil Menüsü */}
           <Menu as="div" className="relative">
             <Menu.Button className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
               <UserCircleIcon className="h-6 w-6" />
