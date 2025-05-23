@@ -4,10 +4,12 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DashboardPage from './pages/DashboardPage';
-import LoginPage from './pages/LoginPage';
+import AuthPage from './pages/AuthPage';
+import LandingPage from './pages/LandingPage';
 import { useAuth } from './context/AuthContext';
 import StatisticsPage from './pages/StatisticsPage';
 import GoalsPage from './pages/GoalsPage';
+import MonthlyReviewPage from './pages/MonthlyReviewPage';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 
@@ -16,17 +18,27 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return children;
 }
 
-// Layout bileşeni
-function Layout({ children }) {
+// Ana Layout bileşeni (Navbar ve Footer ile)
+function MainLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
+      {children}
+      <Footer />
+    </div>
+  );
+}
+
+// Auth Layout bileşeni (Sadece sayfa içeriği)
+function AuthLayout({ children }) {
+  return (
+    <div className="min-h-screen bg-gray-100">
       {children}
     </div>
   );
@@ -40,63 +52,72 @@ function App() {
           <div className="min-h-screen bg-gray-100 flex flex-col">
             <Routes>
               {/* Public Routes */}
-              <Route path="/login" element={
-                <Layout>
-                  <LoginPage />
-                </Layout>
+              <Route path="/" element={<LandingPage />} />
+              
+              <Route path="/auth" element={
+                <AuthLayout>
+                  <AuthPage />
+                </AuthLayout>
               } />
 
               {/* Protected Routes */}
-              <Route path="/" element={
+              <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <DashboardPage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
 
               <Route path="/statistics" element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <StatisticsPage />
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
 
               <Route path="/goals" element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     <GoalsPage />
-                  </Layout>
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/monthly-review" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <MonthlyReviewPage />
+                  </MainLayout>
                 </ProtectedRoute>
               } />
 
               {/* Gelecekte eklenecek korumalı sayfalar için örnek */}
               <Route path="/reports" element={
                 <ProtectedRoute>
-                  <Layout>
+                  <MainLayout>
                     {/* <ReportsPage /> */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                       <h1 className="text-3xl font-bold text-gray-900">Raporlar</h1>
                       <p className="mt-4 text-gray-600">Bu sayfa yapım aşamasındadır.</p>
                     </div>
-                  </Layout>
+                  </MainLayout>
                 </ProtectedRoute>
               } />
 
               {/* 404 Sayfası */}
               <Route path="*" element={
-                <Layout>
+                <MainLayout>
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="text-center">
                       <h1 className="text-4xl font-bold text-gray-900">404</h1>
                       <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
                     </div>
                   </div>
-                </Layout>
+                </MainLayout>
               } />
             </Routes>
-            <Footer />
             <ToastContainer
               position="top-right"
               autoClose={3000}
