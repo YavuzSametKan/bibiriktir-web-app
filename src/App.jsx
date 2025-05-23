@@ -13,12 +13,40 @@ import MonthlyReviewPage from './pages/MonthlyReviewPage';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 
+// Loading bileşeni
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
+
 // Korumalı Route bileşeni
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+}
+
+// Genel route bileşeni
+function PublicRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -49,88 +77,78 @@ function App() {
     <Router>
       <AuthProvider>
         <FinanceProvider>
-          <div className="min-h-screen bg-gray-100 flex flex-col">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              
-              <Route path="/auth" element={
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            } />
+            
+            <Route path="/auth" element={
+              <PublicRoute>
                 <AuthLayout>
                   <AuthPage />
                 </AuthLayout>
-              } />
+              </PublicRoute>
+            } />
 
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DashboardPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/statistics" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <StatisticsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/goals" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <GoalsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/monthly-review" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <MonthlyReviewPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-
-              {/* Gelecekte eklenecek korumalı sayfalar için örnek */}
-              <Route path="/reports" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    {/* <ReportsPage /> */}
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <h1 className="text-3xl font-bold text-gray-900">Raporlar</h1>
-                      <p className="mt-4 text-gray-600">Bu sayfa yapım aşamasındadır.</p>
-                    </div>
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-
-              {/* 404 Sayfası */}
-              <Route path="*" element={
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
                 <MainLayout>
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center">
-                      <h1 className="text-4xl font-bold text-gray-900">404</h1>
-                      <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
-                    </div>
-                  </div>
+                  <DashboardPage />
                 </MainLayout>
-              } />
-            </Routes>
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
-          </div>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/statistics" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <StatisticsPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/goals" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <GoalsPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/monthly-review" element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <MonthlyReviewPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } />
+
+            {/* 404 Sayfası */}
+            <Route path="*" element={
+              <MainLayout>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-900">404</h1>
+                    <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
+                  </div>
+                </div>
+              </MainLayout>
+            } />
+          </Routes>
         </FinanceProvider>
       </AuthProvider>
     </Router>

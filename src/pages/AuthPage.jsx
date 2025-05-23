@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { BanknotesIcon, ChartBarIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authService } from '../services/authService';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Şifre input'u için yeni bir bileşen oluşturalım
 function PasswordInput({ value, onChange, showPassword, setShowPassword, id, name, label, placeholder }) {
@@ -58,7 +61,7 @@ function AuthPage() {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -76,28 +79,79 @@ function AuthPage() {
     setLoading(true);
 
     try {
-      if (email === 'admin@admin.com' && password === 'admin') {
-        const result = await login(email, password);
-        if (result.success) {
-          navigate('/');
-        } else {
-          setError(result.error);
-        }
+      const result = await login(email, password);
+      if (result.success) {
+        navigate('/dashboard');
       } else {
-        setError('Geçersiz e-posta veya şifre');
+        setError(result.error);
+        toast.error(result.error);
       }
     } catch (err) {
-      setError('Giriş yapılırken bir hata oluştu');
+      const errorMessage = err.message || 'Giriş yapılırken bir hata oluştu';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    // Kayıt işlemleri burada yapılacak
-    console.log('Kayıt bilgileri:', registerData);
+    setError('');
+    setLoading(true);
+
+    // Validasyonlar
+    if (!registerData.firstName || !registerData.lastName || !registerData.email || !registerData.password || !registerData.birthDate) {
+      setError('Lütfen tüm alanları doldurun');
+      toast.error('Lütfen tüm alanları doldurun');
+      setLoading(false);
+      return;
+    }
+
+    if (registerData.password !== registerData.confirmPassword) {
+      setError('Şifreler eşleşmiyor');
+      toast.error('Şifreler eşleşmiyor');
+      setLoading(false);
+      return;
+    }
+
+    if (registerData.password.length < 6) {
+      setError('Şifre en az 6 karakter olmalıdır');
+      toast.error('Şifre en az 6 karakter olmalıdır');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await authService.register({
+        firstName: registerData.firstName,
+        lastName: registerData.lastName,
+        email: registerData.email,
+        password: registerData.password,
+        birthDate: registerData.birthDate,
+      });
+
+      if (result.success) {
+        toast.success('Kayıt başarılı! Giriş yapabilirsiniz.');
+        setActiveTab('login');
+        setEmail(registerData.email);
+        setError('');
+      }
+    } catch (err) {
+      setError(err.message || 'Kayıt işlemi sırasında bir hata oluştu');
+      toast.error(err.message || 'Kayıt işlemi sırasında bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -332,9 +386,14 @@ function AuthPage() {
 
                   <button
                     type="submit"
-                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    disabled={loading}
+                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Kayıt Ol
+                    {loading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      'Kayıt Ol'
+                    )}
                   </button>
                 </form>
               </motion.div>

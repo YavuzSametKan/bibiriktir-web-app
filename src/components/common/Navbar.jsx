@@ -1,14 +1,24 @@
 import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon, Bars3Icon, HomeIcon, FlagIcon } from '@heroicons/react/24/outline';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Çıkış yapılırken hata:', error);
+    }
+  };
 
   return (
     <nav className="bg-white shadow-sm z-10">
@@ -79,7 +89,7 @@ function Navbar() {
             <Menu as="div" className="relative">
               <Menu.Button className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                 <UserCircleIcon className="h-6 w-6" />
-                <span className="text-sm font-medium">Test Kullanıcı</span>
+                <span className="text-sm font-medium">{user?.firstName || 'Kullanıcı'}</span>
               </Menu.Button>
 
               <Transition
@@ -106,7 +116,21 @@ function Navbar() {
                   </Menu.Item>
                   <Menu.Item>
                     {({ active }) => (
+                      <Link
+                        to="/monthly-review"
+                        className={`${
+                          active ? 'bg-gray-100' : ''
+                        } flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700`}
+                      >
+                        <ChartBarIcon className="h-5 w-5" />
+                        Değerlendirmeler
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
                       <button
+                        onClick={handleLogout}
                         className={`${
                           active ? 'bg-gray-100' : ''
                         } flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600`}
