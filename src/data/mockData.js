@@ -20,7 +20,8 @@ export const transactions = [
     categoryId: 1,
     accountType: 'credit-card',
     date: '2025-05-15T10:30:00',
-    description: 'Haftalık market alışverişi'
+    description: 'Haftalık market alışverişi',
+    attachment: 'https://example.com/receipts/market-receipt.jpg'
   },
   {
     id: 2,
@@ -29,7 +30,8 @@ export const transactions = [
     categoryId: 4,
     accountType: 'bank',
     date: '2025-05-15T09:00:00',
-    description: 'Mayıs ayı maaşı'
+    description: 'Mayıs ayı maaşı',
+    attachment: 'https://example.com/payslips/may-salary.pdf'
   },
   {
     id: 3,
@@ -38,7 +40,8 @@ export const transactions = [
     categoryId: 2,
     accountType: 'bank',
     date: '2025-05-14T15:45:00',
-    description: 'Elektrik faturası'
+    description: 'Elektrik faturası',
+    attachment: 'https://example.com/bills/electricity-bill.pdf'
   },
   {
     id: 4,
@@ -47,7 +50,8 @@ export const transactions = [
     categoryId: 3,
     accountType: 'credit-card',
     date: '2025-05-16T08:30:00',
-    description: 'Taksi ücreti'
+    description: 'Taksi ücreti',
+    attachment: null
   },
   {
     id: 5,
@@ -56,7 +60,8 @@ export const transactions = [
     categoryId: 6,
     accountType: 'bank',
     date: '2025-05-01T10:00:00',
-    description: 'Mayıs ayı kirası'
+    description: 'Mayıs ayı kirası',
+    attachment: 'https://example.com/rent/may-rent.pdf'
   },
   {
     id: 6,
@@ -65,7 +70,8 @@ export const transactions = [
     categoryId: 7,
     accountType: 'credit-card',
     date: '2025-05-20T14:20:00',
-    description: 'Doktor randevusu'
+    description: 'Doktor randevusu',
+    attachment: 'https://example.com/medical/doctor-receipt.jpg'
   },
   {
     id: 7,
@@ -74,7 +80,8 @@ export const transactions = [
     categoryId: 9,
     accountType: 'credit-card',
     date: '2025-05-20T16:45:00',
-    description: 'Yazlık kıyafet alışverişi'
+    description: 'Yazlık kıyafet alışverişi',
+    attachment: 'https://example.com/receipts/clothing-receipt.jpg'
   },
   {
     id: 8,
@@ -83,7 +90,8 @@ export const transactions = [
     categoryId: 5,
     accountType: 'bank',
     date: '2025-05-21T11:30:00',
-    description: 'Freelance proje ödemesi'
+    description: 'Freelance proje ödemesi',
+    attachment: 'https://example.com/invoices/freelance-invoice.pdf'
   },
 
   // Nisan 2025
