@@ -1,19 +1,45 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Geliştirme aşamasında her zaman authenticated dön
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      // Geliştirme aşamasında basit bir kontrol
+      if (email === 'admin@admin.com' && password === 'admin') {
+        const userData = {
+          id: 1,
+          email: email,
+          name: 'Test Kullanıcı'
+        };
+        setUser(userData);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      return { success: false, error: 'Geçersiz e-posta veya şifre' };
+    } catch (error) {
+      return { success: false, error: 'Giriş yapılırken bir hata oluştu' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
   const value = {
-    isAuthenticated: true,
-    user: {
-      id: 1,
-      email: 'test@example.com',
-      name: 'Test Kullanıcı'
-    },
-    loading: false,
-    login: async () => ({ success: true }),
-    logout: () => {}
+    isAuthenticated,
+    user,
+    loading,
+    login,
+    logout
   };
 
   return (
