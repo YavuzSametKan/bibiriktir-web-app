@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon, Bars3Icon, HomeIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon, Bars3Icon, HomeIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -47,6 +47,19 @@ function Navbar() {
                 <div className="flex items-center gap-2">
                   <ChartBarIcon className="h-5 w-5" />
                   İstatistikler
+                </div>
+              </Link>
+              <Link
+                to="/goals"
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === '/goals'
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FlagIcon className="h-5 w-5" />
+                  Hedefler
                 </div>
               </Link>
             </nav>
@@ -139,6 +152,20 @@ function Navbar() {
                 <div className="flex items-center gap-2">
                   <ChartBarIcon className="h-5 w-5" />
                   İstatistikler
+                </div>
+              </Link>
+              <Link
+                to="/goals"
+                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === '/goals'
+                    ? 'text-indigo-600 bg-indigo-50'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  <FlagIcon className="h-5 w-5" />
+                  Hedefler
                 </div>
               </Link>
             </div>

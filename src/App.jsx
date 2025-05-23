@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './context/AuthContext';
 import StatisticsPage from './pages/StatisticsPage';
+import GoalsPage from './pages/GoalsPage';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 
@@ -58,6 +59,14 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <StatisticsPage />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/goals" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <GoalsPage />
                   </Layout>
                 </ProtectedRoute>
               } />
