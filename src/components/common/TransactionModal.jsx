@@ -5,11 +5,13 @@ import { format } from 'date-fns';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { useCategories } from '../../context/CategoryContext';
 
 // PDF.js worker'ı için
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-function TransactionModal({ isOpen, onClose, categories, transaction, onAdd, onUpdate, onDelete }) {
+function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDelete }) {
+  const { categories, loading: categoriesLoading } = useCategories();
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
@@ -232,13 +234,14 @@ function TransactionModal({ isOpen, onClose, categories, transaction, onAdd, onU
                           value={formData.categoryId}
                           onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                           required
+                          disabled={categoriesLoading}
                           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                         >
                           <option value="">Kategori Seçin</option>
                           {categories
                             .filter(c => c.type === formData.type)
                             .map(category => (
-                              <option key={category.id} value={category.id}>
+                              <option key={category._id} value={category._id}>
                                 {category.name}
                               </option>
                             ))}

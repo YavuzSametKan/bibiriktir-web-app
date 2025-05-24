@@ -12,6 +12,7 @@ import GoalsPage from './pages/GoalsPage';
 import MonthlyReviewPage from './pages/MonthlyReviewPage';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import { CategoryProvider } from './context/CategoryContext';
 
 // Loading bileşeni
 function LoadingSpinner() {
@@ -74,84 +75,86 @@ function AuthLayout({ children }) {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <AuthProvider>
+      <CategoryProvider>
         <FinanceProvider>
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={
-              <PublicRoute>
-                <LandingPage />
-              </PublicRoute>
-            } />
-            
-            <Route path="/auth" element={
-              <PublicRoute>
-                <AuthLayout>
-                  <AuthPage />
-                </AuthLayout>
-              </PublicRoute>
-            } />
+          <Router>
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              } />
+              
+              <Route path="/auth" element={
+                <PublicRoute>
+                  <AuthLayout>
+                    <AuthPage />
+                  </AuthLayout>
+                </PublicRoute>
+              } />
 
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DashboardPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/statistics" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <StatisticsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/goals" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <GoalsPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/monthly-review" element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <MonthlyReviewPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* 404 Sayfası */}
+              <Route path="*" element={
                 <MainLayout>
-                  <DashboardPage />
-                </MainLayout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/statistics" element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <StatisticsPage />
-                </MainLayout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/goals" element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <GoalsPage />
-                </MainLayout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/monthly-review" element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <MonthlyReviewPage />
-                </MainLayout>
-              </ProtectedRoute>
-            } />
-
-            {/* 404 Sayfası */}
-            <Route path="*" element={
-              <MainLayout>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                  <div className="text-center">
-                    <h1 className="text-4xl font-bold text-gray-900">404</h1>
-                    <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="text-center">
+                      <h1 className="text-4xl font-bold text-gray-900">404</h1>
+                      <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
+                    </div>
                   </div>
-                </div>
-              </MainLayout>
-            } />
-          </Routes>
+                </MainLayout>
+              } />
+            </Routes>
+          </Router>
         </FinanceProvider>
-      </AuthProvider>
-    </Router>
+      </CategoryProvider>
+    </AuthProvider>
   );
 }
 

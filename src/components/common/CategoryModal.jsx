@@ -1,30 +1,39 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useCategories } from '../../context/CategoryContext';
 
-function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete }) {
+function CategoryModal({ isOpen, onClose }) {
+  const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories();
   const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
   const [editingCategory, setEditingCategory] = useState(null);
 
-  const handleAddCategory = (e) => {
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (newCategory.name.trim()) {
-      onAdd(newCategory);
-      setNewCategory({ name: '', type: 'expense' });
+      const success = await addCategory(newCategory);
+      if (success) {
+        setNewCategory({ name: '', type: 'expense' });
+      }
     }
   };
 
-  const handleUpdateCategory = (e) => {
+  const handleUpdateCategory = async (e) => {
     e.preventDefault();
     if (editingCategory.name.trim()) {
-      onUpdate(editingCategory);
-      setEditingCategory(null);
+      const success = await updateCategory(editingCategory._id, {
+        name: editingCategory.name,
+        type: editingCategory.type
+      });
+      if (success) {
+        setEditingCategory(null);
+      }
     }
   };
 
-  const handleDeleteCategory = (categoryId) => {
+  const handleDeleteCategory = async (categoryId) => {
     if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
-      onDelete(categoryId);
+      await deleteCategory(categoryId);
     }
   };
 
@@ -98,9 +107,10 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                     </div>
                     <button
                       type="submit"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+                      disabled={loading}
+                      className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Kategori Ekle
+                      {loading ? 'Ekleniyor...' : 'Kategori Ekle'}
                     </button>
                   </form>
 
@@ -108,78 +118,89 @@ function CategoryModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete 
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-gray-900">Mevcut Kategoriler</h4>
                     <div className="max-h-[300px] overflow-y-auto space-y-3 pr-1">
-                      {categories.map((category) => (
-                        <div
-                          key={category.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          {editingCategory?.id === category.id ? (
-                            <form
-                              onSubmit={handleUpdateCategory}
-                              className="flex-1 flex flex-wrap items-center gap-2"
-                            >
-                              <input
-                                type="text"
-                                value={editingCategory.name}
-                                onChange={(e) =>
-                                  setEditingCategory({ ...editingCategory, name: e.target.value })
-                                }
-                                className="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                              />
-                              <select
-                                value={editingCategory.type}
-                                onChange={(e) =>
-                                  setEditingCategory({ ...editingCategory, type: e.target.value })
-                                }
-                                className="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                              >
-                                <option value="expense">Harcama</option>
-                                <option value="income">Gelir</option>
-                              </select>
-                              <div className="flex gap-2">
-                                <button
-                                  type="submit"
-                                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-                                >
-                                  Kaydet
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingCategory(null)}
-                                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-                                >
-                                  İptal
-                                </button>
-                              </div>
-                            </form>
-                          ) : (
-                            <>
-                              <div>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {category.name}
-                                </span>
-                                <span className="ml-2 text-xs text-gray-500">
-                                  ({category.type === 'expense' ? 'Harcama' : 'Gelir'})
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => setEditingCategory(category)}
-                                  className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                  <PencilIcon className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteCategory(category.id)}
-                                  className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                >
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </>
-                          )}
+                      {loading ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
+                          <p className="mt-2 text-sm text-gray-500">Kategoriler yükleniyor...</p>
                         </div>
-                      ))}
+                      ) : categories.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-500">Henüz kategori bulunmuyor.</p>
+                        </div>
+                      ) : (
+                        categories.map((category) => (
+                          <div
+                            key={category._id}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            {editingCategory?._id === category._id ? (
+                              <form
+                                onSubmit={handleUpdateCategory}
+                                className="flex-1 flex flex-wrap items-center gap-2"
+                              >
+                                <input
+                                  type="text"
+                                  value={editingCategory.name}
+                                  onChange={(e) =>
+                                    setEditingCategory({ ...editingCategory, name: e.target.value })
+                                  }
+                                  className="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                                />
+                                <select
+                                  value={editingCategory.type}
+                                  onChange={(e) =>
+                                    setEditingCategory({ ...editingCategory, type: e.target.value })
+                                  }
+                                  className="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                                >
+                                  <option value="expense">Harcama</option>
+                                  <option value="income">Gelir</option>
+                                </select>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="submit"
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+                                  >
+                                    Kaydet
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingCategory(null)}
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                                  >
+                                    İptal
+                                  </button>
+                                </div>
+                              </form>
+                            ) : (
+                              <>
+                                <div>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {category.name}
+                                  </span>
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    ({category.type === 'expense' ? 'Harcama' : 'Gelir'})
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setEditingCategory(category)}
+                                    className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-200 transition-colors"
+                                  >
+                                    <PencilIcon className="h-5 w-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCategory(category._id)}
+                                    className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                  >
+                                    <TrashIcon className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
