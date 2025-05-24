@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 
 const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+
+  // Modal açıldığında form verilerini sıfırla
+  useEffect(() => {
+    if (isOpen) {
+      setAmount('');
+      setNote('');
+      setError('');
+    }
+  }, [isOpen]);
 
   const remainingAmount = goal ? goal.targetAmount - goal.currentAmount : 0;
   const progress = goal ? ((goal.currentAmount + Number(amount || 0)) / goal.targetAmount) * 100 : 0;
@@ -35,19 +45,49 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (Number(amount) > remainingAmount) {
+    
+    console.log('Modal Goal:', goal);
+
+    if (!goal?._id) {
+      toast.error('Hedef seçilmedi');
+      onClose();
       return;
     }
 
-    onAdd({
-      amount: Number(amount),
-      note,
-      date: new Date().toISOString()
-    });
-    setAmount('');
-    setNote('');
+    if (!amount || Number(amount) <= 0) {
+      toast.error('Lütfen geçerli bir miktar girin');
+      return;
+    }
+
+    if (Number(amount) > remainingAmount) {
+      toast.error(`Kalan tutar: ${remainingAmount.toLocaleString('tr-TR')} ₺`);
+      return;
+    }
+
+    try {
+      const contribution = {
+        amount: Number(amount),
+        note: note.trim(),
+        date: new Date().toISOString()
+      };
+
+      console.log('Submitting contribution:', contribution);
+
+      await onAdd(contribution);
+      
+      // Form verilerini sıfırla
+      setAmount('');
+      setNote('');
+      setError('');
+      
+      // Modal'ı kapat
+      onClose();
+    } catch (error) {
+      console.error('Katkı ekleme hatası:', error);
+      toast.error(error.message || 'Katkı eklenirken bir hata oluştu');
+    }
   };
 
   return (
