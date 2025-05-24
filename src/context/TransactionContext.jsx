@@ -16,6 +16,8 @@ export const useTransactions = () => {
 
 export const TransactionProvider = ({ children }) => {
   const [transactions, setTransactions] = useState([]);
+  const [currentMonthTransactions, setCurrentMonthTransactions] = useState([]);
+  const [previousMonthTransactions, setPreviousMonthTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -30,18 +32,25 @@ export const TransactionProvider = ({ children }) => {
 
     try {
       setLoading(true);
+      // Seçili ay
       const startDate = format(startOfMonth(date), 'dd.MM.yyyy-HH:mm');
       const endDate = format(endOfMonth(date), 'dd.MM.yyyy-HH:mm');
+      // Önceki ay
+      const prevDate = new Date(date);
+      prevDate.setMonth(prevDate.getMonth() - 1);
+      const prevStartDate = format(startOfMonth(prevDate), 'dd.MM.yyyy-HH:mm');
+      const prevEndDate = format(endOfMonth(prevDate), 'dd.MM.yyyy-HH:mm');
 
-      const response = await transactionService.getAllTransactions({
-        startDate,
-        endDate,
-        sort: '-date'
-      });
+      // API çağrıları
+      const [currentRes, prevRes] = await Promise.all([
+        transactionService.getAllTransactions({ startDate, endDate, sort: '-date' }),
+        transactionService.getAllTransactions({ startDate: prevStartDate, endDate: prevEndDate, sort: '-date' })
+      ]);
 
-      if (response.success) {
-        setTransactions(response.data);
-      }
+      if (currentRes.success) setCurrentMonthTransactions(currentRes.data);
+      if (prevRes.success) setPreviousMonthTransactions(prevRes.data);
+      // Eski tekli state'i de güncel tutmak için:
+      setTransactions(currentRes.success ? currentRes.data : []);
     } catch (error) {
       setError(error.message);
       toast.error('İşlemler yüklenirken bir hata oluştu');
@@ -115,7 +124,8 @@ export const TransactionProvider = ({ children }) => {
   return (
     <TransactionContext.Provider
       value={{
-        transactions,
+        transactions: currentMonthTransactions,
+        previousMonthTransactions,
         loading,
         error,
         selectedDate,

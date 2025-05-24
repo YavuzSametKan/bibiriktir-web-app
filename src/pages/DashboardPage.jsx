@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getMonth, getYear, subMonths, addMonths } from 'date-fns';
+import { getMonth, getYear, subMonths, addMonths, format, parse } from 'date-fns';
 import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Line, Pie } from 'react-chartjs-2';
 import {
@@ -13,15 +13,14 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import MonthSelector from '../components/common/MonthSelector';
+import MonthSelector from '../components/dashboard/MonthSelector';
 import TransactionList from '../components/dashboard/TransactionList';
-import AddTransactionButton from '../components/common/AddTransactionButton';
-import CategoryManagementButton from '../components/common/CategoryManagementButton';
-import TransactionModal from '../components/common/TransactionModal';
-import CategoryModal from '../components/common/CategoryModal';
+import AddTransactionButton from '../components/dashboard/AddTransactionButton';
+import CategoryManagementButton from '../components/dashboard/CategoryManagementButton';
+import TransactionModal from '../components/dashboard/TransactionModal';
+import CategoryModal from '../components/dashboard/CategoryModal';
 import { useFinance } from '../context/FinanceContext';
 import Navbar from '../components/common/Navbar';
-import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useTransactions } from '../context/TransactionContext';
 
@@ -38,7 +37,6 @@ ChartJS.register(
 
 function DashboardPage() {
   const {
-    transactions,
     categories,
     isTransactionModalOpen,
     setIsTransactionModalOpen,
@@ -54,8 +52,7 @@ function DashboardPage() {
     handleDeleteCategory
   } = useFinance();
 
-  const { transactions: transactionContextTransactions, loading, selectedDate, setSelectedDate } = useTransactions();
-
+  const { transactions, previousMonthTransactions, loading, selectedDate, setSelectedDate } = useTransactions();
   const [showCharts, setShowCharts] = useState(false);
 
   const {
@@ -69,22 +66,8 @@ function DashboardPage() {
     incomePieData,
     expensePieData
   } = useMemo(() => {
-    const currentMonthTransactions = transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return (
-        getMonth(transactionDate) === getMonth(selectedDate) &&
-        getYear(transactionDate) === getYear(selectedDate)
-      );
-    });
-
-    const previousMonthDate = subMonths(selectedDate, 1);
-    const previousMonthTransactions = transactions.filter(transaction => {
-      const transactionDate = new Date(transaction.date);
-      return (
-        getMonth(transactionDate) === getMonth(previousMonthDate) &&
-        getYear(transactionDate) === getYear(previousMonthDate)
-      );
-    });
+    const currentMonthTransactions = transactions;
+    const prevMonthTransactions = previousMonthTransactions || [];
 
     const currentMonthIncome = currentMonthTransactions
       .filter(t => t.type === 'income')
@@ -94,20 +77,20 @@ function DashboardPage() {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const previousMonthIncome = previousMonthTransactions
+    const previousMonthIncome = prevMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const previousMonthExpense = previousMonthTransactions
+    const previousMonthExpense = prevMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
     const incomeChange = previousMonthIncome === 0 
-      ? 0 
+      ? (currentMonthIncome === 0 ? 0 : 100) 
       : ((currentMonthIncome - previousMonthIncome) / previousMonthIncome) * 100;
 
     const expenseChange = previousMonthExpense === 0 
-      ? 0 
+      ? (currentMonthExpense === 0 ? 0 : 100) 
       : ((currentMonthExpense - previousMonthExpense) / previousMonthExpense) * 100;
 
     const lineChartData = {
@@ -131,7 +114,8 @@ function DashboardPage() {
     };
 
     currentMonthTransactions.forEach(transaction => {
-      const day = new Date(transaction.date).getDate() - 1;
+      const transactionDate = parse(transaction.date, 'dd.MM.yyyy-HH:mm', new Date());
+      const day = transactionDate.getDate() - 1;
       if (transaction.type === 'income') {
         lineChartData.datasets[0].data[day] += transaction.amount;
       } else {
@@ -142,9 +126,8 @@ function DashboardPage() {
     const incomeByCategory = currentMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((acc, t) => {
-        const category = categories.find(c => c.id === t.categoryId);
-        if (category) {
-          acc[category.name] = (acc[category.name] || 0) + t.amount;
+        if (t.category && t.category.name) {
+          acc[t.category.name] = (acc[t.category.name] || 0) + t.amount;
         }
         return acc;
       }, {});
@@ -152,9 +135,8 @@ function DashboardPage() {
     const expenseByCategory = currentMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((acc, t) => {
-        const category = categories.find(c => c.id === t.categoryId);
-        if (category) {
-          acc[category.name] = (acc[category.name] || 0) + t.amount;
+        if (t.category && t.category.name) {
+          acc[t.category.name] = (acc[t.category.name] || 0) + t.amount;
         }
         return acc;
       }, {});
@@ -210,10 +192,10 @@ function DashboardPage() {
       incomePieData,
       expensePieData
     };
-  }, [transactions, selectedDate, categories]);
+  }, [transactions, previousMonthTransactions, selectedDate]);
 
   const filteredTransactions = transactions.filter(t => {
-    const transactionDate = new Date(t.date);
+    const transactionDate = parse(t.date, 'dd.MM.yyyy-HH:mm', new Date());
     return (
       getMonth(transactionDate) === getMonth(selectedDate) &&
       getYear(transactionDate) === getYear(selectedDate)
@@ -238,15 +220,23 @@ function DashboardPage() {
               {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
             </div>
             <div className="flex items-center text-sm">
-              <span className={`font-medium ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
-              </span>
-              {incomeChange !== 0 && (
-                incomeChange > 0 ? (
-                  <ArrowUpIcon className="h-4 w-4 ml-1 text-green-600" />
-                ) : (
-                  <ArrowDownIcon className="h-4 w-4 ml-1 text-red-600" />
-                )
+              {previousMonthIncome === 0 ? (
+                <span className="text-gray-600">Önceki aya ait veri bulunmuyor</span>
+              ) : currentMonthIncome === 0 ? (
+                <span className="text-gray-600">Bu aya ait veri bulunmuyor</span>
+              ) : (
+                <>
+                  <span className={`font-medium ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {incomeChange >= 0 ? '+' : ''}{incomeChange.toFixed(1)}% geçen aya göre
+                  </span>
+                  {incomeChange !== 0 && (
+                    incomeChange > 0 ? (
+                      <ArrowUpIcon className="h-4 w-4 ml-1 text-green-600" />
+                    ) : (
+                      <ArrowDownIcon className="h-4 w-4 ml-1 text-red-600" />
+                    )
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -257,15 +247,23 @@ function DashboardPage() {
               {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
             </div>
             <div className="flex items-center text-sm">
-              <span className={`font-medium ${expenseChange >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
-              </span>
-              {expenseChange !== 0 && (
-                expenseChange > 0 ? (
-                  <ArrowUpIcon className="h-4 w-4 ml-1 text-red-600" />
-                ) : (
-                  <ArrowDownIcon className="h-4 w-4 ml-1 text-green-600" />
-                )
+              {previousMonthExpense === 0 ? (
+                <span className="text-gray-600">Önceki aya ait veri bulunmuyor</span>
+              ) : currentMonthExpense === 0 ? (
+                <span className="text-gray-600">Bu aya ait veri bulunmuyor</span>
+              ) : (
+                <>
+                  <span className={`font-medium ${expenseChange <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {expenseChange >= 0 ? '+' : ''}{expenseChange.toFixed(1)}% geçen aya göre
+                  </span>
+                  {expenseChange !== 0 && (
+                    expenseChange > 0 ? (
+                      <ArrowUpIcon className="h-4 w-4 ml-1 text-red-600" />
+                    ) : (
+                      <ArrowDownIcon className="h-4 w-4 ml-1 text-green-600" />
+                    )
+                  )}
+                </>
               )}
             </div>
           </div>
