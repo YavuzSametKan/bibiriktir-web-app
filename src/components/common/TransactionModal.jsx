@@ -1,23 +1,30 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, DocumentIcon, PhotoIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
+import { tr } from 'date-fns/locale';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useCategories } from '../../context/CategoryContext';
+import { useTransactions } from '../../context/TransactionContext';
+import { toast } from 'react-toastify';
 
 // PDF.js worker'ı için
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
-function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDelete }) {
+function TransactionModal({ isOpen, onClose, transaction }) {
   const { categories, loading: categoriesLoading } = useCategories();
+  const { addTransaction, updateTransaction, deleteTransaction } = useTransactions();
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
     categoryId: '',
     accountType: 'cash',
-    date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    date: format(new Date(), 'dd.MM.yyyy-HH:mm'),
     description: '',
     attachment: null
   });
@@ -28,19 +35,25 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [fileType, setFileType] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (transaction) {
+      const date = parse(transaction.date, 'dd.MM.yyyy-HH:mm', new Date());
       setFormData({
-        ...transaction,
-        date: format(new Date(transaction.date), "yyyy-MM-dd'T'HH:mm")
+        type: transaction.type,
+        amount: transaction.amount.toString(),
+        categoryId: transaction.category?._id || '',
+        accountType: transaction.accountType,
+        date: format(date, "yyyy-MM-dd'T'HH:mm"),
+        description: transaction.description || '',
+        attachment: transaction.attachment || null
       });
       if (transaction.attachment) {
-        setPreviewUrl(transaction.attachment);
-        // Dosya tipini belirle
-        if (transaction.attachment.toLowerCase().endsWith('.pdf')) {
+        setPreviewUrl(transaction.attachment.url);
+        if (transaction.attachment.mimetype === 'application/pdf') {
           setFileType('pdf');
-        } else if (transaction.attachment.match(/\.(jpg|jpeg|png|gif)$/i)) {
+        } else if (transaction.attachment.mimetype.startsWith('image/')) {
           setFileType('image');
         }
       }
@@ -63,26 +76,103 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
     setNumPages(numPages);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      date: new Date(formData.date).toISOString()
-    };
+    setIsSubmitting(true);
 
-    if (transaction) {
-      onUpdate({ ...data, id: transaction.id });
-    } else {
-      onAdd(data);
+    try {
+      // FormData oluştur
+      const formDataToSend = new FormData();
+
+      // Temel alanları ekle
+      formDataToSend.append('type', formData.type);
+      formDataToSend.append('amount', formData.amount);
+      formDataToSend.append('categoryId', formData.categoryId);
+      formDataToSend.append('accountType', formData.accountType);
+      
+      // Tarihi API'nin beklediği formata dönüştür
+      const date = parse(formData.date, "yyyy-MM-dd'T'HH:mm", new Date());
+      const formattedDate = format(date, 'dd.MM.yyyy-HH:mm');
+      formDataToSend.append('date', formattedDate);
+      
+      // Açıklama varsa ekle
+      if (formData.description) {
+        formDataToSend.append('description', formData.description);
+      }
+
+      // Dosya işlemleri
+      if (formData.attachment instanceof File) {
+        // Yeni dosya yükleniyor
+        console.log('Yeni dosya yükleniyor:', formData.attachment);
+        formDataToSend.append('attachment', formData.attachment);
+      } else if (transaction?.attachment && !previewUrl) {
+        // Mevcut dosya kaldırılıyor
+        console.log('Mevcut dosya kaldırılıyor');
+        formDataToSend.append('removeAttachment', 'true');
+      }
+
+      // Debug için form verilerini logla
+      const formDataObj = {};
+      for (let [key, value] of formDataToSend.entries()) {
+        if (key === 'attachment' && value instanceof File) {
+          formDataObj[key] = {
+            name: value.name,
+            type: value.type,
+            size: value.size
+          };
+        } else {
+          formDataObj[key] = value;
+        }
+      }
+      console.log('Gönderilecek form verisi:', formDataObj);
+
+      let response;
+      if (transaction) {
+        // Güncelleme işlemi
+        response = await updateTransaction(transaction._id, formDataToSend);
+      } else {
+        // Yeni işlem ekleme
+        response = await addTransaction(formDataToSend);
+      }
+
+      // API yanıtını kontrol et
+      if (response === true || (response && response.success)) {
+        toast.success(transaction ? 'İşlem güncellendi' : 'İşlem eklendi');
+        onClose();
+      } else {
+        // API'den gelen hata mesajını kullan
+        const errorMessage = response?.error || (transaction ? 'Güncelleme başarısız oldu' : 'İşlem eklenirken bir hata oluştu');
+        console.error('İşlem hatası:', errorMessage);
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('İşlem hatası:', error);
+      toast.error(error.message || 'Bir hata oluştu');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!transaction) return;
+
     if (window.confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
-      onDelete(transaction.id);
-      onClose();
+      try {
+        const response = await deleteTransaction(transaction._id);
+        console.log('Silme yanıtı:', response); // Debug için
+
+        if (response === true || (response && response.success)) {
+          toast.success('İşlem başarıyla silindi');
+          onClose();
+        } else {
+          const errorMessage = response?.error || 'Silme işlemi başarısız oldu';
+          console.error('Silme hatası:', errorMessage);
+          throw new Error(errorMessage);
+        }
+      } catch (error) {
+        console.error('Silme hatası:', error);
+        toast.error(error.message || 'Silme işlemi başarısız oldu');
+      }
     }
   };
 
@@ -91,21 +181,20 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
 
     // Dosya boyutu kontrolü (2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Dosya boyutu 2MB\'dan büyük olamaz!');
+      toast.error('Dosya boyutu 2MB\'dan büyük olamaz!');
       return;
     }
 
     // Dosya tipi kontrolü
     if (!file.type.match(/^(image\/|application\/pdf)/)) {
-      alert('Sadece resim ve PDF dosyaları yükleyebilirsiniz!');
+      toast.error('Sadece resim ve PDF dosyaları yükleyebilirsiniz!');
       return;
     }
 
-    const mockUrl = URL.createObjectURL(file);
-    setFormData({ ...formData, attachment: mockUrl });
-    setPreviewUrl(mockUrl);
+    console.log('Yeni dosya seçildi:', file);
+    setFormData(prev => ({ ...prev, attachment: file }));
+    setPreviewUrl(URL.createObjectURL(file));
     
-    // Dosya tipini belirle
     if (file.type === 'application/pdf') {
       setFileType('pdf');
     } else if (file.type.startsWith('image/')) {
@@ -137,8 +226,10 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
 
   const handleRemoveAttachment = () => {
     if (window.confirm('Eki silmek istediğinizden emin misiniz?')) {
-      setFormData({ ...formData, attachment: null });
+      console.log('Ek kaldırılıyor');
+      setFormData(prev => ({ ...prev, attachment: null }));
       setPreviewUrl(null);
+      setFileType(null);
     }
   };
 
@@ -371,7 +462,8 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
                         <button
                           type="button"
                           onClick={handleDelete}
-                          className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700"
+                          disabled={isSubmitting}
+                          className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
                         >
                           Sil
                         </button>
@@ -379,15 +471,17 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
                       <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800"
+                        disabled={isSubmitting}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800 disabled:opacity-50"
                       >
                         İptal
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        disabled={isSubmitting}
+                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                       >
-                        {transaction ? 'Güncelle' : 'Ekle'}
+                        {isSubmitting ? 'Kaydediliyor...' : (transaction ? 'Güncelle' : 'Ekle')}
                       </button>
                     </div>
                   </form>
@@ -401,7 +495,7 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
                               <div className="flex items-center space-x-2">
                                 <DocumentIcon className="h-6 w-6 text-indigo-600" />
                                 <span className="text-sm font-medium text-gray-900">
-                                  PDF Önizleme
+                                  PDF Dosyası
                                 </span>
                               </div>
                               <div className="flex space-x-2">
@@ -422,42 +516,13 @@ function TransactionModal({ isOpen, onClose, transaction, onAdd, onUpdate, onDel
                                 </button>
                               </div>
                             </div>
-                            <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-                              <div className="flex justify-center p-4">
-                                <Document
-                                  file={previewUrl}
-                                  onLoadSuccess={onDocumentLoadSuccess}
-                                  className="max-w-full"
-                                >
-                                  <Page
-                                    pageNumber={pageNumber}
-                                    width={500}
-                                    renderTextLayer={false}
-                                    renderAnnotationLayer={false}
-                                  />
-                                </Document>
+                            <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-200 p-6">
+                              <div className="flex flex-col items-center justify-center text-center">
+                                <DocumentIcon className="h-12 w-12 text-indigo-600 mb-3" />
+                                <p className="text-sm text-gray-600">
+                                  PDF dosyasını görüntülemek için "Yeni Sekmede Aç" butonuna tıklayın.
+                                </p>
                               </div>
-                              {numPages > 1 && (
-                                <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-t border-gray-200">
-                                  <button
-                                    onClick={() => setPageNumber(page => Math.max(page - 1, 1))}
-                                    disabled={pageNumber <= 1}
-                                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
-                                  >
-                                    Önceki
-                                  </button>
-                                  <span className="text-sm text-gray-600">
-                                    Sayfa {pageNumber} / {numPages}
-                                  </span>
-                                  <button
-                                    onClick={() => setPageNumber(page => Math.min(page + 1, numPages))}
-                                    disabled={pageNumber >= numPages}
-                                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
-                                  >
-                                    Sonraki
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           </div>
                         ) : (

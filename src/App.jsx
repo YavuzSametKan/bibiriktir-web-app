@@ -13,6 +13,7 @@ import MonthlyReviewPage from './pages/MonthlyReviewPage';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import { CategoryProvider } from './context/CategoryContext';
+import { TransactionProvider } from './context/TransactionContext';
 
 // Loading bileşeni
 function LoadingSpinner() {
@@ -73,86 +74,93 @@ function AuthLayout({ children }) {
   );
 }
 
+// 404 Sayfası bileşeni
+function NotFoundPage() {
+  return (
+    <MainLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900">404</h1>
+          <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
+        </div>
+      </div>
+    </MainLayout>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <CategoryProvider>
-        <FinanceProvider>
-          <Router>
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-            />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={
-                <PublicRoute>
-                  <LandingPage />
-                </PublicRoute>
-              } />
-              
-              <Route path="/auth" element={
-                <PublicRoute>
-                  <AuthLayout>
-                    <AuthPage />
-                  </AuthLayout>
-                </PublicRoute>
-              } />
+        <TransactionProvider>
+          <FinanceProvider>
+            <Router>
+              <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+              />
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={
+                  <PublicRoute>
+                    <LandingPage />
+                  </PublicRoute>
+                } />
+                
+                <Route path="/auth" element={
+                  <PublicRoute>
+                    <AuthLayout>
+                      <AuthPage />
+                    </AuthLayout>
+                  </PublicRoute>
+                } />
 
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DashboardPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <DashboardPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/statistics" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <StatisticsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
+                <Route path="/statistics" element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <StatisticsPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/goals" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <GoalsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
+                <Route path="/goals" element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <GoalsPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/monthly-review" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <MonthlyReviewPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
+                <Route path="/monthly-review" element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <MonthlyReviewPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                } />
 
-              {/* 404 Sayfası */}
-              <Route path="*" element={
-                <MainLayout>
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center">
-                      <h1 className="text-4xl font-bold text-gray-900">404</h1>
-                      <p className="mt-4 text-gray-600">Aradığınız sayfa bulunamadı.</p>
-                    </div>
-                  </div>
-                </MainLayout>
-              } />
-            </Routes>
-          </Router>
-        </FinanceProvider>
+                {/* 404 Sayfası */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Router>
+          </FinanceProvider>
+        </TransactionProvider>
       </CategoryProvider>
     </AuthProvider>
   );
