@@ -36,7 +36,7 @@ function Navbar() {
               <Link
                 to="/"
                 className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === '/'
+                  location.pathname === '/' || location.pathname === '/dashboard'
                     ? 'text-indigo-600 bg-indigo-50'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                 }`}
@@ -153,7 +153,7 @@ function Navbar() {
               <Link
                 to="/"
                 className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === '/'
+                  location.pathname === '/' || location.pathname === '/dashboard'
                     ? 'text-indigo-600 bg-indigo-50'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                 }`}
