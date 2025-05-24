@@ -13,7 +13,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import MonthSelector from '../components/dashboard/MonthSelector';
+import MonthSelector from '../components/common/MonthSelector';
 import TransactionList from '../components/dashboard/TransactionList';
 import AddTransactionButton from '../components/common/AddTransactionButton';
 import CategoryManagementButton from '../components/common/CategoryManagementButton';
@@ -23,6 +23,7 @@ import { useFinance } from '../context/FinanceContext';
 import Navbar from '../components/common/Navbar';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { useTransactions } from '../context/TransactionContext';
 
 ChartJS.register(
   CategoryScale,
@@ -53,7 +54,8 @@ function DashboardPage() {
     handleDeleteCategory
   } = useFinance();
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { transactions: transactionContextTransactions, loading, selectedDate, setSelectedDate } = useTransactions();
+
   const [showCharts, setShowCharts] = useState(false);
 
   const {
@@ -221,32 +223,12 @@ function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {format(selectedDate, 'MMMM yyyy', { locale: tr })}
-            </h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSelectedDate(subMonths(selectedDate, 1))}
-                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <ChevronLeftIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setSelectedDate(new Date())}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors"
-              >
-                Bu Ay
-              </button>
-              <button
-                onClick={() => setSelectedDate(addMonths(selectedDate, 1))}
-                className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <ChevronRightIcon className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <MonthSelector
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

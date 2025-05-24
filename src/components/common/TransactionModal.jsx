@@ -24,7 +24,7 @@ function TransactionModal({ isOpen, onClose, transaction }) {
     amount: '',
     categoryId: '',
     accountType: 'cash',
-    date: format(new Date(), 'dd.MM.yyyy-HH:mm'),
+    date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     description: '',
     attachment: null
   });
@@ -80,7 +80,7 @@ function TransactionModal({ isOpen, onClose, transaction }) {
         amount: '',
         categoryId: '',
         accountType: 'cash',
-        date: format(new Date(), 'dd.MM.yyyy-HH:mm'),
+        date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
         description: '',
         attachment: null
       });
@@ -98,72 +98,42 @@ function TransactionModal({ isOpen, onClose, transaction }) {
     setIsSubmitting(true);
 
     try {
-      // FormData oluştur
       const formDataToSend = new FormData();
 
-      // Temel alanları ekle
       formDataToSend.append('type', formData.type);
       formDataToSend.append('amount', formData.amount);
       formDataToSend.append('categoryId', formData.categoryId);
       formDataToSend.append('accountType', formData.accountType);
       
-      // Tarihi API'nin beklediği formata dönüştür
       const date = parse(formData.date, "yyyy-MM-dd'T'HH:mm", new Date());
       const formattedDate = format(date, 'dd.MM.yyyy-HH:mm');
       formDataToSend.append('date', formattedDate);
       
-      // Açıklama varsa ekle
       if (formData.description) {
         formDataToSend.append('description', formData.description);
       }
 
-      // Dosya işlemleri
       if (formData.attachment instanceof File) {
-        // Yeni dosya yükleniyor
-        console.log('Yeni dosya yükleniyor:', formData.attachment);
         formDataToSend.append('attachment', formData.attachment);
       } else if (transaction?.attachment && !previewUrl) {
-        // Mevcut dosya kaldırılıyor
-        console.log('Mevcut dosya kaldırılıyor');
         formDataToSend.append('removeAttachment', 'true');
       }
 
-      // Debug için form verilerini logla
-      const formDataObj = {};
-      for (let [key, value] of formDataToSend.entries()) {
-        if (key === 'attachment' && value instanceof File) {
-          formDataObj[key] = {
-            name: value.name,
-            type: value.type,
-            size: value.size
-          };
-        } else {
-          formDataObj[key] = value;
-        }
-      }
-      console.log('Gönderilecek form verisi:', formDataObj);
-
       let response;
       if (transaction) {
-        // Güncelleme işlemi
         response = await updateTransaction(transaction._id, formDataToSend);
       } else {
-        // Yeni işlem ekleme
         response = await addTransaction(formDataToSend);
       }
 
-      // API yanıtını kontrol et
       if (response === true || (response && response.success)) {
         toast.success(transaction ? 'İşlem güncellendi' : 'İşlem eklendi');
         onClose();
       } else {
-        // API'den gelen hata mesajını kullan
         const errorMessage = response?.error || (transaction ? 'Güncelleme başarısız oldu' : 'İşlem eklenirken bir hata oluştu');
-        console.error('İşlem hatası:', errorMessage);
         toast.error(errorMessage);
       }
     } catch (error) {
-      console.error('İşlem hatası:', error);
       toast.error(error.message || 'Bir hata oluştu');
     } finally {
       setIsSubmitting(false);
@@ -176,18 +146,15 @@ function TransactionModal({ isOpen, onClose, transaction }) {
     if (window.confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
       try {
         const response = await deleteTransaction(transaction._id);
-        console.log('Silme yanıtı:', response); // Debug için
 
         if (response === true || (response && response.success)) {
           toast.success('İşlem başarıyla silindi');
           onClose();
         } else {
           const errorMessage = response?.error || 'Silme işlemi başarısız oldu';
-          console.error('Silme hatası:', errorMessage);
           throw new Error(errorMessage);
         }
       } catch (error) {
-        console.error('Silme hatası:', error);
         toast.error(error.message || 'Silme işlemi başarısız oldu');
       }
     }
@@ -196,19 +163,16 @@ function TransactionModal({ isOpen, onClose, transaction }) {
   const handleFileChange = (file) => {
     if (!file) return;
 
-    // Dosya boyutu kontrolü (2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Dosya boyutu 2MB\'dan büyük olamaz!');
       return;
     }
 
-    // Dosya tipi kontrolü
     if (!file.type.match(/^(image\/|application\/pdf)/)) {
       toast.error('Sadece resim ve PDF dosyaları yükleyebilirsiniz!');
       return;
     }
 
-    console.log('Yeni dosya seçildi:', file);
     setFormData(prev => ({ ...prev, attachment: file }));
     setPreviewUrl(URL.createObjectURL(file));
     
@@ -243,7 +207,6 @@ function TransactionModal({ isOpen, onClose, transaction }) {
 
   const handleRemoveAttachment = () => {
     if (window.confirm('Eki silmek istediğinizden emin misiniz?')) {
-      console.log('Ek kaldırılıyor');
       setFormData(prev => ({ ...prev, attachment: null }));
       setPreviewUrl(null);
       setFileType(null);

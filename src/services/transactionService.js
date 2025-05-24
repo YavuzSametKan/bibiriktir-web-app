@@ -49,21 +49,13 @@ export const transactionService = {
   // Yeni işlem oluştur
   createTransaction: async (transactionData) => {
     try {
-      // FormData'yı doğrudan gönder
-      console.log('Yeni işlem oluşturuluyor:', {
-        data: Object.fromEntries(transactionData.entries())
-      });
-
       const response = await api.post('/transactions', transactionData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-
-      console.log('API yanıtı:', response.data);
       return response.data;
     } catch (error) {
-      console.error('API hatası:', error.response?.data || error.message);
       throw error.response?.data || error.message;
     }
   },
@@ -71,22 +63,13 @@ export const transactionService = {
   // İşlem güncelle
   updateTransaction: async (id, transactionData) => {
     try {
-      // FormData'yı doğrudan gönder
-      console.log('İşlem güncelleniyor:', {
-        id,
-        data: Object.fromEntries(transactionData.entries())
-      });
-
       const response = await api.put(`/transactions/${id}`, transactionData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-
-      console.log('API yanıtı:', response.data);
       return response.data;
     } catch (error) {
-      console.error('API hatası:', error.response?.data || error.message);
       throw error.response?.data || error.message;
     }
   },
