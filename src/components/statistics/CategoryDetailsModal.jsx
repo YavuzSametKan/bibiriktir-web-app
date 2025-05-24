@@ -1,11 +1,46 @@
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { statisticsService } from '../../services/statisticsService';
+import { toast } from 'react-toastify';
 
-function CategoryDetailsModal({ isOpen, onClose, category, transactions }) {
-  const total = transactions.reduce((sum, t) => sum + t.amount, 0);
+function CategoryDetailsModal({ isOpen, onClose, category, startDate, endDate }) {
+  const [loading, setLoading] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState(null);
+
+  useEffect(() => {
+    const fetchCategoryDetails = async () => {
+      if (!category) return;
+
+      setLoading(true);
+      try {
+        const response = await statisticsService.getCategoryStats(
+          format(startDate, 'yyyy-MM-dd'),
+          format(endDate, 'yyyy-MM-dd'),
+          category.type
+        );
+
+        const categoryData = response.data.categories.find(
+          c => c.categoryId === category.categoryId
+        );
+
+        if (categoryData) {
+          setCategoryDetails(categoryData);
+        }
+      } catch (error) {
+        toast.error('Kategori detayları yüklenirken bir hata oluştu');
+        console.error('Kategori detayları yükleme hatası:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategoryDetails();
+    }
+  }, [isOpen, category, startDate, endDate]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -23,7 +58,7 @@ function CategoryDetailsModal({ isOpen, onClose, category, transactions }) {
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -33,62 +68,64 @@ function CategoryDetailsModal({ isOpen, onClose, category, transactions }) {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex items-center justify-between mb-4">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
-                  >
-                    {category?.name} Detayları
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
+                <div className="flex justify-between items-center mb-6">
+                  <Dialog.Title as="h3" className="text-xl font-semibold text-gray-900">
+                    {category?.categoryName} Detayları
                   </Dialog.Title>
                   <button
-                    type="button"
-                    className="rounded-lg p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     onClick={onClose}
+                    className="text-gray-400 hover:text-gray-500"
                   >
-                    <XMarkIcon className="h-5 w-5" />
+                    <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
 
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {total.toLocaleString('tr-TR', {
-                      style: 'currency',
-                      currency: 'TRY',
-                    })}
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Toplam {transactions.length} işlem
-                  </div>
-                </div>
+                ) : categoryDetails ? (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Toplam Tutar</h4>
+                      <p className="mt-1 text-2xl font-semibold text-gray-900">
+                        {categoryDetails.totalAmount.toLocaleString('tr-TR', {
+                          style: 'currency',
+                          currency: 'TRY',
+                        })}
+                      </p>
+                    </div>
 
-                <div className="max-h-96 overflow-y-auto">
-                  <div className="space-y-4">
-                    {transactions.map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {transaction.description}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {format(new Date(transaction.date), 'd MMMM yyyy', {
-                              locale: tr,
-                            })}
-                          </div>
-                        </div>
-                        <div className="text-lg font-medium text-gray-900">
-                          {transaction.amount.toLocaleString('tr-TR', {
-                            style: 'currency',
-                            currency: 'TRY',
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">İşlem Sayısı</h4>
+                      <p className="mt-1 text-xl text-gray-900">
+                        {categoryDetails.transactionCount} işlem
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Ortalama İşlem Tutarı</h4>
+                      <p className="mt-1 text-xl text-gray-900">
+                        {categoryDetails.averageAmount.toLocaleString('tr-TR', {
+                          style: 'currency',
+                          currency: 'TRY',
+                        })}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Toplam Tutarın Yüzdesi</h4>
+                      <p className="mt-1 text-xl text-gray-900">
+                        %{categoryDetails.percentage.toFixed(1)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Kategori detayları bulunamadı.</p>
+                  </div>
+                )}
               </Dialog.Panel>
             </Transition.Child>
           </div>

@@ -11,6 +11,21 @@ const api = axios.create({
   },
 });
 
+// Axios interceptor ekle
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Hatası:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+
 export const authService = {
   async register(userData) {
     try {
@@ -53,8 +68,11 @@ export const authService = {
       const response = await api.get('/auth/check-auth');
       return response.data;
     } catch (error) {
-      if (error.response && error.response.status === 401) {
+      if (error.response?.status === 401) {
         return { success: false, error: 'Oturum bulunamadı' };
+      }
+      if (error.code === 'ERR_NETWORK') {
+        throw new Error('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
       }
       throw new Error('Kimlik doğrulama hatası');
     }
