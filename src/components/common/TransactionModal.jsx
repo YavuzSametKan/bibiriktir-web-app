@@ -72,6 +72,23 @@ function TransactionModal({ isOpen, onClose, transaction }) {
     }
   }, [transaction]);
 
+  // Modal kapandığında form verilerini sıfırla
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        type: 'expense',
+        amount: '',
+        categoryId: '',
+        accountType: 'cash',
+        date: format(new Date(), 'dd.MM.yyyy-HH:mm'),
+        description: '',
+        attachment: null
+      });
+      setPreviewUrl(null);
+      setFileType(null);
+    }
+  }, [isOpen]);
+
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
   };
