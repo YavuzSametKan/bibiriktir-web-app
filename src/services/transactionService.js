@@ -82,5 +82,26 @@ export const transactionService = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
+  },
+
+  // Açıklama autocomplete
+  getDescriptionSuggestions: async (query, categoryId, type) => {
+    try {
+      const params = new URLSearchParams();
+      params.append('query', query);
+      if (type) params.append('type', type);
+
+      console.log('API isteği:', {
+        url: '/transactions/description-suggestions',
+        params: Object.fromEntries(params)
+      });
+
+      const response = await api.get(`/transactions/description-suggestions?${params}`);
+      console.log('API yanıtı:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API hatası:', error);
+      throw error.response?.data || error.message;
+    }
   }
 }; 

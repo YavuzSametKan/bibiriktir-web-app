@@ -9,6 +9,8 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useCategories } from '../../context/CategoryContext';
 import { useTransactions } from '../../context/TransactionContext';
 import { toast } from 'react-toastify';
+import debounce from 'lodash.debounce';
+import { transactionService } from '../../services/transactionService';
 
 // PDF.js worker'ı için
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -36,6 +38,43 @@ function TransactionModal({ isOpen, onClose, transaction }) {
   const [pageNumber, setPageNumber] = useState(1);
   const [fileType, setFileType] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [descriptionSuggestions, setDescriptionSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Debounced API çağrısı
+  const fetchSuggestions = debounce(async (query, categoryId, type) => {
+    console.log('API çağrısı yapılıyor:', { query, categoryId, type });
+    if (query.length < 2) {
+      setDescriptionSuggestions([]);
+      return;
+    }
+    try {
+      const res = await transactionService.getDescriptionSuggestions(query, categoryId, type);
+      console.log('API yanıtı:', res.data);
+      // Seçilen açıklamayı önerilerden filtrele
+      const filteredSuggestions = (res.data || []).filter(s => s.description !== query);
+      setDescriptionSuggestions(filteredSuggestions);
+      setShowSuggestions(true);
+    } catch (e) {
+      console.log('API hatası:', e);
+      setDescriptionSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, 300);
+
+  // Açıklama değiştikçe öneri getir
+  useEffect(() => {
+    console.log('useEffect tetiklendi:', { description: formData.description, isInitialLoad });
+    if (!isInitialLoad && formData.description && formData.description.length >= 2) {
+      fetchSuggestions(formData.description, null, formData.type);
+    } else {
+      setDescriptionSuggestions([]);
+      setShowSuggestions(false);
+    }
+    // Temizlik için
+    return () => fetchSuggestions.cancel();
+  }, [formData.description, formData.categoryId, formData.type, isInitialLoad]);
 
   useEffect(() => {
     if (transaction) {
@@ -49,6 +88,7 @@ function TransactionModal({ isOpen, onClose, transaction }) {
         description: transaction.description || '',
         attachment: transaction.attachment || null
       });
+      setIsInitialLoad(false);
       if (transaction.attachment) {
         setPreviewUrl(transaction.attachment.url);
         if (transaction.attachment.mimetype === 'application/pdf') {
@@ -69,6 +109,7 @@ function TransactionModal({ isOpen, onClose, transaction }) {
       });
       setPreviewUrl(null);
       setFileType(null);
+      setIsInitialLoad(false);
     }
   }, [transaction]);
 
@@ -86,6 +127,9 @@ function TransactionModal({ isOpen, onClose, transaction }) {
       });
       setPreviewUrl(null);
       setFileType(null);
+      setDescriptionSuggestions([]);
+      setShowSuggestions(false);
+      setIsInitialLoad(false);
     }
   }, [isOpen]);
 
@@ -369,12 +413,40 @@ function TransactionModal({ isOpen, onClose, transaction }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Açıklama
                       </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        rows={3}
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={formData.description}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            setFormData({ ...formData, description: newValue });
+                            setIsInitialLoad(false);
+                            // Eğer yeni değer mevcut açıklamadan farklıysa önerileri göster
+                            if (newValue.length >= 2 && newValue !== transaction?.description) {
+                              setShowSuggestions(true);
+                            } else {
+                              setShowSuggestions(false);
+                            }
+                          }}
+                          rows={2}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                        />
+                        {showSuggestions && descriptionSuggestions.length > 0 && (
+                          <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow mt-1 max-h-48 overflow-auto">
+                            {descriptionSuggestions.map((s, idx) => (
+                              <li
+                                key={s.description + idx}
+                                className="px-4 py-2 cursor-pointer hover:bg-indigo-50 text-sm text-gray-800"
+                                onClick={() => {
+                                  setFormData({ ...formData, description: s.description });
+                                  setShowSuggestions(false);
+                                }}
+                              >
+                                {s.description}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
 
                     <div>
