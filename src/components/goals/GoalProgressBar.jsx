@@ -8,23 +8,29 @@ const getProgressStyle = (progress) => {
       statusColor: 'bg-green-100 text-green-800',
       statusText: 'Hedefine Ulaştın'
     };
-  } else if (progress >= 76) {
+  } else if (progress >= 75) {
     return {
       barColor: 'bg-orange-500',
       statusColor: 'bg-orange-100 text-orange-800',
       statusText: 'Neredeyse Başardın'
     };
-  } else if (progress >= 51) {
+  } else if (progress >= 50) {
     return {
       barColor: 'bg-yellow-500',
       statusColor: 'bg-yellow-100 text-yellow-800',
       statusText: 'Yolu Yarıladın'
     };
-  } else {
+  } else if (progress >= 25) {
     return {
       barColor: 'bg-blue-500',
       statusColor: 'bg-blue-100 text-blue-800',
       statusText: 'Devam Ediyor'
+    };
+  } else {
+    return {
+      barColor: 'bg-gray-500',
+      statusColor: 'bg-gray-100 text-gray-800',
+      statusText: 'Başlangıç'
     };
   }
 };

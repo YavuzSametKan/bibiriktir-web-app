@@ -43,11 +43,14 @@ const GoalsPage = () => {
       if (response.success) {
         setGoals(prevGoals => [...prevGoals, response.data]);
         toast.success('Yeni hedef başarıyla oluşturuldu.');
-        setIsAddGoalModalOpen(false);
       }
     } catch (error) {
       toast.error(error.message || 'Hedef oluşturulurken bir hata oluştu');
+      return;
     }
+
+    // Başarılı işlem sonrası modalı kapat
+    setIsAddGoalModalOpen(false);
   };
 
   const handleAddContribution = async (contribution) => {
@@ -100,13 +103,15 @@ const GoalsPage = () => {
       }
 
       toast.success('Katkı başarıyla kaydedildi.');
-      setIsAddContributionModalOpen(false);
-      setSelectedGoal(null);
-
     } catch (error) {
       console.error('Katkı ekleme hatası:', error);
       toast.error(error.message || 'Katkı eklenirken bir hata oluştu');
+      return;
     }
+
+    // Başarılı işlem sonrası modalı kapat ve seçili hedefi temizle
+    setIsAddContributionModalOpen(false);
+    setSelectedGoal(null);
   };
 
   const handleUpdateContribution = async (goalId, contributionId, updatedContribution) => {
