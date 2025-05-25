@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { UserCircleIcon, KeyIcon, CalendarIcon, EyeIcon, EyeSlashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 function AccountSettingsPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isTFAModalOpen, setIsTFAModalOpen] = useState(false);
@@ -19,10 +19,12 @@ function AccountSettingsPage() {
   const [remainingAttempts, setRemainingAttempts] = useState(5);
 
   const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    birthDate: user?.birthDate || '',
+    firstName: '',
+    lastName: '',
+    birthDate: ''
   });
+
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -131,21 +133,100 @@ function AccountSettingsPage() {
     }
   };
 
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
+  // Profil bilgilerini getir
+  const fetchProfileData = async () => {
     try {
-      // API çağrısı yapılacak
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simüle edilmiş API çağrısı
-      setMessage({ type: 'success', text: 'Profil bilgileriniz başarıyla güncellendi.' });
+      console.log('Profil bilgileri alınıyor...');
+      const response = await axios.get('/api/users/profile');
+      console.log('API yanıtı:', response.data);
+
+      if (response.data.success) {
+        // Tarihi güvenli bir şekilde dönüştür
+        let birthDate = '';
+        if (response.data.data.birthDate) {
+          try {
+            // dd.mm.yyyy formatındaki tarihi parçala
+            const [day, month, year] = response.data.data.birthDate.split('.');
+            // yyyy-mm-dd formatına çevir
+            birthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          } catch (error) {
+            console.error('Tarih dönüşüm hatası:', error);
+          }
+        }
+
+        console.log('İşlenmiş doğum tarihi:', birthDate);
+
+        setProfileData({
+          firstName: response.data.data.firstName || '',
+          lastName: response.data.data.lastName || '',
+          birthDate: birthDate
+        });
+      } else {
+        console.error('API başarısız yanıt:', response.data);
+        toast.error(response.data.error || 'Profil bilgileri alınamadı');
+      }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Profil güncellenirken bir hata oluştu.' });
-    } finally {
-      setIsLoading(false);
+      console.error('Profil bilgileri alınırken hata:', error);
+      if (error.response) {
+        toast.error(error.response.data.error || 'Profil bilgileri alınamadı');
+      } else if (error.request) {
+        toast.error('Sunucuya bağlanılamadı');
+      } else {
+        toast.error('Bir hata oluştu');
+      }
     }
   };
+
+  // Profil bilgilerini güncelle
+  const handleProfileUpdate = async () => {
+    if (!profileData.firstName || !profileData.lastName || !profileData.birthDate) {
+      toast.error('Lütfen tüm alanları doldurunuz');
+      return;
+    }
+
+    setIsProfileLoading(true);
+    try {
+      // yyyy-mm-dd formatındaki tarihi dd.mm.yyyy formatına çevir
+      const [year, month, day] = profileData.birthDate.split('-');
+      const formattedBirthDate = `${day}.${month}.${year}`;
+
+      console.log('Güncellenecek profil bilgileri:', {
+        ...profileData,
+        birthDate: formattedBirthDate
+      });
+
+      const response = await axios.put('/api/users/profile', {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        birthDate: formattedBirthDate
+      });
+
+      if (response.data.success) {
+        toast.success('Profil bilgileriniz başarıyla güncellendi');
+        // Kullanıcı bilgilerini güncelle
+        if (typeof setUser === 'function') {
+          setUser(prev => ({
+            ...prev,
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+            birthDate: formattedBirthDate
+          }));
+        }
+      }
+    } catch (error) {
+      // Sadece gerçek hata durumlarında hata mesajı göster
+      if (error.response?.status !== 200) {
+        toast.error(error.response?.data?.error || 'Profil güncellenirken bir hata oluştu');
+      }
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
+  // Component mount olduğunda profil bilgilerini getir
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
@@ -277,53 +358,51 @@ function AccountSettingsPage() {
             <form onSubmit={handleProfileUpdate} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                     Ad
                   </label>
                   <input
                     type="text"
                     id="firstName"
                     value={profileData.firstName}
-                    onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
-                    required
+                    onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                     Soyad
                   </label>
                   <input
                     type="text"
                     id="lastName"
                     value={profileData.lastName}
-                    onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
-                    required
+                    onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700">
                     Doğum Tarihi
                   </label>
                   <input
                     type="date"
                     id="birthDate"
                     value={profileData.birthDate}
-                    onChange={(e) => setProfileData({ ...profileData, birthDate: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
-                    required
+                    onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
+                    className="mt-1 block w-full rounded-lg border border-gray-200 px-4 py-3 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="flex justify-end pt-4">
                 <button
-                  type="submit"
-                  disabled={isLoading}
+                  type="button"
+                  onClick={handleProfileUpdate}
+                  disabled={isProfileLoading}
                   className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
                 >
-                  {isLoading ? 'Güncelleniyor...' : 'Profili Güncelle'}
+                  {isProfileLoading ? 'Güncelleniyor...' : 'Güncelle'}
                 </button>
               </div>
             </form>
