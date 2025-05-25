@@ -15,14 +15,12 @@ export function AuthProvider({ children }) {
       if (response.success) {
         setUser(response.data);
         setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
+        return { success: true, data: response.data };
       }
+      return { success: false, error: 'Oturum bulunamadı' };
     } catch (error) {
       console.error('Auth kontrolü sırasında hata:', error);
-      setUser(null);
-      setIsAuthenticated(false);
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
@@ -33,20 +31,17 @@ export function AuthProvider({ children }) {
   }, [checkAuthStatus]);
 
   const login = async (email, password) => {
-    setLoading(true);
     try {
       const result = await authService.login({ email, password });
       if (result.success) {
-        await checkAuthStatus();
+        setUser(result.data);
+        setIsAuthenticated(true);
         toast.success('Giriş başarılı!');
         return { success: true };
       }
       return { success: false, error: result.error };
     } catch (error) {
-      toast.error(error.message);
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -56,6 +51,7 @@ export function AuthProvider({ children }) {
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      localStorage.removeItem('hasSeenWelcome');
       toast.success('Çıkış başarılı!');
     } catch (error) {
       console.error('Çıkış yapılırken hata:', error);

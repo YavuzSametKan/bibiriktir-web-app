@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Şifre input'u için yeni bir bileşen oluşturalım
-function PasswordInput({ value, onChange, showPassword, setShowPassword, id, name, label, placeholder }) {
+function PasswordInput({ value, onChange, showPassword, setShowPassword, id, name, label, placeholder, error }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
@@ -21,7 +21,9 @@ function PasswordInput({ value, onChange, showPassword, setShowPassword, id, nam
           name={name}
           type={showPassword ? "text" : "password"}
           required
-          className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10"
+          className={`appearance-none block w-full px-3 py-2 border ${
+            error ? 'border-red-300' : 'border-gray-300'
+          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10`}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
@@ -39,6 +41,9 @@ function PasswordInput({ value, onChange, showPassword, setShowPassword, id, nam
           )}
         </button>
       </div>
+      {error && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
     </div>
   );
 }
@@ -58,6 +63,7 @@ function AuthPage() {
     confirmPassword: '',
     birthDate: '',
   });
+  const [registerErrors, setRegisterErrors] = useState({});
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -83,13 +89,10 @@ function AuthPage() {
       if (result.success) {
         navigate('/dashboard');
       } else {
-        setError(result.error);
         toast.error(result.error);
       }
     } catch (err) {
-      const errorMessage = err.message || 'Giriş yapılırken bir hata oluştu';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(err.message || 'Giriş yapılırken bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -98,25 +101,32 @@ function AuthPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    setRegisterErrors({});
     setLoading(true);
 
     // Validasyonlar
-    if (!registerData.firstName || !registerData.lastName || !registerData.email || !registerData.password || !registerData.birthDate) {
-      setError('Lütfen tüm alanları doldurun');
-      toast.error('Lütfen tüm alanları doldurun');
+    const errors = {};
+    if (!registerData.firstName) errors.firstName = 'Ad alanı zorunludur';
+    if (!registerData.lastName) errors.lastName = 'Soyad alanı zorunludur';
+    if (!registerData.email) errors.email = 'E-posta alanı zorunludur';
+    if (!registerData.password) errors.password = 'Şifre alanı zorunludur';
+    if (!registerData.confirmPassword) errors.confirmPassword = 'Şifre tekrarı zorunludur';
+    if (!registerData.birthDate) errors.birthDate = 'Doğum tarihi zorunludur';
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       setLoading(false);
       return;
     }
 
     if (registerData.password !== registerData.confirmPassword) {
-      setError('Şifreler eşleşmiyor');
       toast.error('Şifreler eşleşmiyor');
       setLoading(false);
       return;
     }
 
     if (registerData.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır');
       toast.error('Şifre en az 6 karakter olmalıdır');
       setLoading(false);
       return;
@@ -136,10 +146,11 @@ function AuthPage() {
         setActiveTab('login');
         setEmail(registerData.email);
         setError('');
+      } else {
+        toast.error(result.error);
       }
     } catch (err) {
-      setError(err.message || 'Kayıt işlemi sırasında bir hata oluştu');
-      toast.error(err.message || 'Kayıt işlemi sırasında bir hata oluştu');
+      toast.error('Kayıt işlemi sırasında bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -271,12 +282,6 @@ function AuthPage() {
                       setShowPassword={setShowPassword}
                     />
                   </div>
-
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg p-3 text-center">
-                      {error}
-                    </div>
-                  )}
 
                   <button
                     type="submit"

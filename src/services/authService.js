@@ -33,9 +33,9 @@ export const authService = {
       return response.data;
     } catch (error) {
       if (error.response) {
-        throw new Error(error.response.data.error || 'Kayıt işlemi başarısız oldu');
+        return { success: false, error: error.response.data.error || 'Kayıt işlemi başarısız oldu' };
       }
-      throw new Error('Sunucuya bağlanılamadı');
+      return { success: false, error: 'Sunucuya bağlanılamadı' };
     }
   },
 
@@ -45,9 +45,9 @@ export const authService = {
       return response.data;
     } catch (error) {
       if (error.response) {
-        throw new Error(error.response.data.error || 'Giriş işlemi başarısız oldu');
+        return { success: false, error: error.response.data.error || 'Giriş işlemi başarısız oldu' };
       }
-      throw new Error('Sunucuya bağlanılamadı');
+      return { success: false, error: 'Sunucuya bağlanılamadı' };
     }
   },
 
