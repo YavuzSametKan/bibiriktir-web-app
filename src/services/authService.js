@@ -41,9 +41,27 @@ export const authService = {
 
   async login(credentials) {
     try {
+      console.log('Login isteği gönderiliyor:', credentials);
       const response = await api.post('/auth/login', credentials);
-      return response.data;
+      console.log('Login API yanıtı:', response.data);
+
+      if (response.data.success) {
+        // Kullanıcı bilgilerini kontrol et
+        if (!response.data.data) {
+          console.error('Login başarılı fakat kullanıcı bilgileri eksik');
+          return { success: false, error: 'Kullanıcı bilgileri alınamadı' };
+        }
+
+        console.log('Login başarılı, kullanıcı bilgileri:', response.data.data);
+        return {
+          success: true,
+          data: response.data.data
+        };
+      }
+      console.log('Login başarısız:', response.data.error);
+      return { success: false, error: response.data.error || 'Giriş işlemi başarısız oldu' };
     } catch (error) {
+      console.error('Login hatası:', error);
       if (error.response) {
         return { success: false, error: error.response.data.error || 'Giriş işlemi başarısız oldu' };
       }

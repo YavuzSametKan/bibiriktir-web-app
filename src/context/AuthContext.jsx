@@ -32,15 +32,21 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
+      console.log('AuthContext: Login başlatılıyor');
       const result = await authService.login({ email, password });
+      console.log('AuthContext: Login sonucu:', result);
+
       if (result.success) {
+        console.log('AuthContext: Kullanıcı bilgileri state\'e kaydediliyor:', result.data);
         setUser(result.data);
         setIsAuthenticated(true);
         toast.success('Giriş başarılı!');
-        return { success: true };
+        return { success: true, data: result.data };
       }
+      console.log('AuthContext: Login başarısız:', result.error);
       return { success: false, error: result.error };
     } catch (error) {
+      console.error('AuthContext: Login hatası:', error);
       return { success: false, error: error.message };
     }
   };
