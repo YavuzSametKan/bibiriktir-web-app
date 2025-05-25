@@ -1,12 +1,15 @@
-# React + Vite
+# Finansal İşlem Takip Uygulaması
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Kişisel gelir ve giderlerinizi takip etmenizi sağlayan, işlem ekleme, analiz ve finansal sağlık takibi yapan modern bir web uygulamasıdır.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Özellikler
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Gelir ve gider işlemlerini kolayca ekleyebilme  
+- İşlem açıklaması yazarken önceki benzer açıklamaların önerilmesi  
+- İşlemlere isteğe bağlı fotoğraf veya PDF ekleyebilme  
+- Kategori bazlı pasta grafiklerle harcama dağılımını görme  
+- Finansal sağlık puanı ile genel finansal durum değerlendirmesi  
+- Ay bazında ileri/geri animasyonlu işlem listesi geçişleri  
+- Kategori seçildiğinde, ilgili işlemlerin detaylı modal pencerede listelenmesi  
