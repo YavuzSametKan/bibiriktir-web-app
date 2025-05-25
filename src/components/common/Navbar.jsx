@@ -3,6 +3,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, BanknotesIcon, ChartBarIcon, Bars3Icon, HomeIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function Navbar() {
   const location = useLocation();
@@ -21,7 +22,7 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm z-10">
+    <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Sol taraf - Logo ve Navigasyon */}
@@ -147,54 +148,62 @@ function Navbar() {
         </div>
 
         {/* Mobil Menü */}
-        {isMobileMenuOpen && (
-          <div className="sm:hidden py-2">
-            <div className="flex flex-col space-y-1">
-              <Link
-                to="/"
-                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === '/' || location.pathname === '/dashboard'
-                    ? 'text-indigo-600 bg-indigo-50'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <HomeIcon className="h-5 w-5" />
-                  Ana Sayfa
-                </div>
-              </Link>
-              <Link
-                to="/statistics"
-                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === '/statistics'
-                    ? 'text-indigo-600 bg-indigo-50'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <ChartBarIcon className="h-5 w-5" />
-                  İstatistikler
-                </div>
-              </Link>
-              <Link
-                to="/goals"
-                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === '/goals'
-                    ? 'text-indigo-600 bg-indigo-50'
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <FlagIcon className="h-5 w-5" />
-                  Hedefler
-                </div>
-              </Link>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="sm:hidden overflow-hidden"
+            >
+              <div className="flex flex-col space-y-1 py-2">
+                <Link
+                  to="/"
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === '/' || location.pathname === '/dashboard'
+                      ? 'text-indigo-600 bg-indigo-50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center gap-2">
+                    <HomeIcon className="h-5 w-5" />
+                    Ana Sayfa
+                  </div>
+                </Link>
+                <Link
+                  to="/statistics"
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === '/statistics'
+                      ? 'text-indigo-600 bg-indigo-50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center gap-2">
+                    <ChartBarIcon className="h-5 w-5" />
+                    İstatistikler
+                  </div>
+                </Link>
+                <Link
+                  to="/goals"
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === '/goals'
+                      ? 'text-indigo-600 bg-indigo-50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <div className="flex items-center gap-2">
+                    <FlagIcon className="h-5 w-5" />
+                    Hedefler
+                  </div>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   );
