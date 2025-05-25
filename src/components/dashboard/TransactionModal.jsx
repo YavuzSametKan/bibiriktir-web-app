@@ -3,20 +3,15 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, DocumentIcon, PhotoIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { format, parse } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { Viewer, Worker } from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { useCategories } from '../../context/CategoryContext';
 import { useTransactions } from '../../context/TransactionContext';
 import { toast } from 'react-toastify';
 import debounce from 'lodash.debounce';
 import { transactionService } from '../../services/transactionService';
-
-// PDF.js worker'ı için
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
 
 function TransactionModal({ isOpen, onClose, transaction }) {
   const { categories, loading: categoriesLoading } = useCategories();
@@ -34,13 +29,14 @@ function TransactionModal({ isOpen, onClose, transaction }) {
   const [activeTab, setActiveTab] = useState('details');
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
   const [fileType, setFileType] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [descriptionSuggestions, setDescriptionSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // PDF viewer için default layout plugin
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   // Debounced API çağrısı
   const fetchSuggestions = debounce(async (query, categoryId, type) => {
@@ -110,6 +106,7 @@ function TransactionModal({ isOpen, onClose, transaction }) {
       setPreviewUrl(null);
       setFileType(null);
       setIsInitialLoad(false);
+      setActiveTab('details');
     }
   }, [transaction]);
 
@@ -130,12 +127,9 @@ function TransactionModal({ isOpen, onClose, transaction }) {
       setDescriptionSuggestions([]);
       setShowSuggestions(false);
       setIsInitialLoad(false);
+      setActiveTab('details');
     }
   }, [isOpen]);
-
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -568,13 +562,13 @@ function TransactionModal({ isOpen, onClose, transaction }) {
                                 </button>
                               </div>
                             </div>
-                            <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-200 p-6">
-                              <div className="flex flex-col items-center justify-center text-center">
-                                <DocumentIcon className="h-12 w-12 text-indigo-600 mb-3" />
-                                <p className="text-sm text-gray-600">
-                                  PDF dosyasını görüntülemek için "Yeni Sekmede Aç" butonuna tıklayın.
-                                </p>
-                              </div>
+                            <div className="w-full bg-gray-50 rounded-lg overflow-hidden border border-gray-200" style={{ height: '500px' }}>
+                              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                                <Viewer
+                                  fileUrl={previewUrl}
+                                  plugins={[defaultLayoutPluginInstance]}
+                                />
+                              </Worker>
                             </div>
                           </div>
                         ) : (

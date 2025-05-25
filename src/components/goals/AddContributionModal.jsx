@@ -7,6 +7,7 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal açıldığında form verilerini sıfırla
   useEffect(() => {
@@ -14,6 +15,7 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
       setAmount('');
       setNote('');
       setError('');
+      setIsSubmitting(false);
     }
   }, [isOpen]);
 
@@ -24,14 +26,18 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
 
   const getProgressColor = () => {
     if (progress >= 100) return 'bg-green-500';
-    if (progress >= 80) return 'bg-yellow-500';
-    return 'bg-blue-500';
+    if (progress >= 75) return 'bg-orange-500';
+    if (progress >= 50) return 'bg-yellow-500';
+    if (progress >= 25) return 'bg-blue-500';
+    return 'bg-gray-500';
   };
 
   const getProgressTextColor = () => {
     if (progress >= 100) return 'text-green-800';
-    if (progress >= 80) return 'text-yellow-800';
-    return 'text-blue-800';
+    if (progress >= 75) return 'text-orange-800';
+    if (progress >= 50) return 'text-yellow-800';
+    if (progress >= 25) return 'text-blue-800';
+    return 'text-gray-800';
   };
 
   const handleAmountChange = (e) => {
@@ -48,8 +54,8 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('Modal Goal:', goal);
-
+    if (isSubmitting) return;
+    
     if (!goal?._id) {
       toast.error('Hedef seçilmedi');
       onClose();
@@ -67,26 +73,24 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
     }
 
     try {
+      console.log('Katkı ekleme başlıyor...');
+      setIsSubmitting(true);
       const contribution = {
         amount: Number(amount),
         note: note.trim(),
         date: new Date().toISOString()
       };
 
-      console.log('Submitting contribution:', contribution);
-
+      console.log('onAdd çağrılıyor...');
       await onAdd(contribution);
-      
-      // Form verilerini sıfırla
-      setAmount('');
-      setNote('');
-      setError('');
-      
-      // Modal'ı kapat
+      console.log('onAdd tamamlandı, modal kapanıyor...');
       onClose();
     } catch (error) {
       console.error('Katkı ekleme hatası:', error);
       toast.error(error.message || 'Katkı eklenirken bir hata oluştu');
+    } finally {
+      console.log('isSubmitting false yapılıyor...');
+      setIsSubmitting(false);
     }
   };
 
@@ -157,16 +161,17 @@ const AddContributionModal = ({ isOpen, onClose, onAdd, goal }) => {
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isSubmitting}
+            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             İptal
           </button>
           <button
             type="submit"
-            disabled={!!error}
+            disabled={!!error || isSubmitting}
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Ekle
+            {isSubmitting ? 'Ekleniyor...' : 'Ekle'}
           </button>
         </div>
       </form>

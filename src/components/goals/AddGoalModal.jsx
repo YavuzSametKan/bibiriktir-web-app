@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { toast } from 'react-toastify';
 
@@ -10,6 +10,15 @@ const AddGoalModal = ({ isOpen, onClose, onAdd }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({ title: '', targetAmount: '', deadline: '' });
+      setErrors({});
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -38,21 +47,36 @@ const AddGoalModal = ({ isOpen, onClose, onAdd }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
     
     if (!validateForm()) {
       return;
     }
 
-    onAdd({
-      ...formData,
-      targetAmount: Number(formData.targetAmount),
-      currentAmount: 0,
-      contributions: []
-    });
-    setFormData({ title: '', targetAmount: '', deadline: '' });
-    setErrors({});
+    try {
+      console.log('Hedef ekleme başlıyor...');
+      setIsSubmitting(true);
+      const newGoal = {
+        ...formData,
+        targetAmount: Number(formData.targetAmount),
+        currentAmount: 0,
+        contributions: []
+      };
+
+      console.log('onAdd çağrılıyor...');
+      await onAdd(newGoal);
+      console.log('onAdd tamamlandı, modal kapanıyor...');
+      onClose();
+    } catch (error) {
+      console.error('Hedef ekleme hatası:', error);
+      toast.error(error.message || 'Hedef eklenirken bir hata oluştu');
+    } finally {
+      console.log('isSubmitting false yapılıyor...');
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -142,15 +166,17 @@ const AddGoalModal = ({ isOpen, onClose, onAdd }) => {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isSubmitting}
+            className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             İptal
           </button>
           <button
             type="submit"
-            className="px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={isSubmitting}
+            className="px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Oluştur
+            {isSubmitting ? 'Oluşturuluyor...' : 'Oluştur'}
           </button>
         </div>
       </form>

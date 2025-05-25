@@ -328,7 +328,12 @@ const GoalDetailModal = ({ isOpen, onClose, goal, onUpdateContribution, onDelete
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Hedef Detayları">
+    <Modal isOpen={isOpen} onClose={onClose} title={
+      <div className="space-y-1">
+        <h3 className="text-xl font-semibold text-gray-900">{localGoal.title}</h3>
+        <p className="text-sm text-gray-500">Hedef Detayları</p>
+      </div>
+    }>
       <div className="space-y-6">
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4">
           <div className="grid grid-cols-2 gap-3">
@@ -437,7 +442,7 @@ const GoalDetailModal = ({ isOpen, onClose, goal, onUpdateContribution, onDelete
 
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Katkılar</h3>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
             {sortedContributions.map(contribution => (
               <ContributionItem
                 key={contribution._id}
@@ -465,5 +470,28 @@ const GoalDetailModal = ({ isOpen, onClose, goal, onUpdateContribution, onDelete
     </Modal>
   );
 };
+
+// Global CSS için stil ekleyin
+const style = document.createElement('style');
+style.textContent = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+`;
+document.head.appendChild(style);
 
 export default GoalDetailModal; 
