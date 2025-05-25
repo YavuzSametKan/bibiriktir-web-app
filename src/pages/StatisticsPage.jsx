@@ -124,12 +124,15 @@ function StatisticsPage() {
 
         if (statsResponse?.data?.success) {
           const stats = statsResponse.data.data;
+          console.log('Backend Stats:', stats);
           setMonthlyStats(stats);
           
           // Kategori istatistiklerini ayarla
           const categories = selectedType === 'income' 
             ? stats.categoryBreakdown?.income || []
             : stats.categoryBreakdown?.expense || [];
+          
+          console.log('Categories:', categories);
           
           setCategoryStats({
             categories: categories.map(cat => ({
@@ -154,6 +157,15 @@ function StatisticsPage() {
             ? stats.totalIncome || 0 
             : stats.totalExpense || 0;
 
+          // En sık kullanılan kategoriyi bul (ilk kategoriyi al)
+          const mostFrequentCategory = categories.length > 0 ? {
+            categoryName: categories[0].categoryName,
+            transactionCount: categories[0].count || categories[0].transactionCount || 0,
+            totalAmount: categories[0].amount || 0
+          } : null;
+
+          console.log('Most Frequent Category Data:', categories[0]);
+
           setCustomStats({
             averageTransactionAmount: transactionCount > 0 ? totalAmount / transactionCount : 0,
             largestTransaction: {
@@ -161,7 +173,7 @@ function StatisticsPage() {
               description: 'En yüksek günlük ' + (selectedType === 'income' ? 'gelir' : 'gider'),
               categoryName: selectedType === 'income' ? 'Gelir' : 'Gider'
             },
-            mostFrequentCategory: categories[0] || {
+            mostFrequentCategory: mostFrequentCategory || {
               categoryName: 'Veri yok',
               transactionCount: 0,
               totalAmount: 0
@@ -394,7 +406,7 @@ function StatisticsPage() {
               </div>
               {getPreviousPeriodData?.hasPreviousData ? (
                 <>
-                  <div>
+              <div>
                     <p className="text-sm text-gray-600">
                       {selectedPeriod === 'weekly' && 'Geçen Hafta'}
                       {selectedPeriod === 'monthly' && 'Geçen Ay'}
@@ -402,15 +414,15 @@ function StatisticsPage() {
                       {selectedPeriod === 'halfYearly' && 'Önceki 6 Ay'}
                       {selectedPeriod === 'yearly' && 'Geçen Yıl'}
                     </p>
-                    <p className="text-xl text-gray-700">
+                <p className="text-xl text-gray-700">
                       {(getPreviousPeriodData?.previousAmount || 0).toLocaleString('tr-TR', {
-                        style: 'currency',
-                        currency: 'TRY',
-                      })}
-                    </p>
-                  </div>
-                  <p className={`text-sm font-medium ${
-                    selectedType === 'income' 
+                    style: 'currency',
+                    currency: 'TRY',
+                  })}
+                </p>
+              </div>
+              <p className={`text-sm font-medium ${
+                selectedType === 'income' 
                       ? (getPreviousPeriodData?.change >= 0 ? 'text-green-600' : 'text-red-600')
                       : (getPreviousPeriodData?.change <= 0 ? 'text-green-600' : 'text-red-600')
                   }`}>
@@ -440,15 +452,15 @@ function StatisticsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-900">
                         {(category.totalAmount || 0).toLocaleString('tr-TR', {
-                          style: 'currency',
-                          currency: 'TRY',
-                        })}
-                      </span>
+                              style: 'currency',
+                              currency: 'TRY',
+                            })}
+                          </span>
                       <span className="text-xs text-gray-500">
                         ({(category.percentage || 0).toFixed(1)}%)
-                      </span>
-                    </div>
-                  </div>
+                          </span>
+                        </div>
+                      </div>
                 ))}
               </div>
             </div>
@@ -534,12 +546,12 @@ function StatisticsPage() {
               )}
             </div>
           </div>
-        </div>
+          </div>
 
         {/* Grafikler */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Trend Grafiği */}
-          <div className="bg-white rounded-lg p-6 shadow">
+          <div className="bg-white rounded-lg p-6 shadow lg:col-span-2">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Trend Analizi</h3>
             <div className="h-80">
               <LineChart
@@ -550,10 +562,10 @@ function StatisticsPage() {
                 type={selectedType}
               />
             </div>
-          </div>
+            </div>
 
           {/* Kategori Dağılımı */}
-          <div className="bg-white rounded-lg p-6 shadow">
+            <div className="bg-white rounded-lg p-6 shadow">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Kategori Dağılımı</h3>
             <div className="h-80">
               <PieChart
@@ -571,19 +583,22 @@ function StatisticsPage() {
         {/* Özel İstatistikler */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ortalama İşlem</h3>
-            <p className="text-2xl font-bold text-gray-900">
-              {(customStats?.averageTransactionAmount || 0).toLocaleString('tr-TR', {
-                style: 'currency',
-                currency: 'TRY',
-              })}
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Ortalama İşlem</h3>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-gray-900">
+                {(customStats?.averageTransactionAmount || 0).toLocaleString('tr-TR', {
+                  style: 'currency',
+                  currency: 'TRY',
+                })}
+              </p>
+              <p className="text-sm text-gray-500">/ işlem</p>
+            </div>
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">En Büyük İşlem</h3>
-            <div className="space-y-2">
-              <p className="text-xl font-bold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">En Büyük İşlem</h3>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-gray-900">
                 {(customStats?.largestTransaction?.amount || 0).toLocaleString('tr-TR', {
                   style: 'currency',
                   currency: 'TRY',
@@ -595,12 +610,13 @@ function StatisticsPage() {
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">En Sık Kullanılan Kategori</h3>
-            <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">En Sık Kullanılan Kategori</h3>
+            <div className="space-y-1">
               <p className="text-xl font-bold text-gray-900">{customStats?.mostFrequentCategory?.categoryName || 'Veri yok'}</p>
-              <p className="text-sm text-gray-600">
-                {customStats?.mostFrequentCategory?.transactionCount || 0} işlem
-              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="font-medium">{customStats?.mostFrequentCategory?.transactionCount || 0}</span>
+                <span>işlem</span>
+              </div>
               <p className="text-sm text-gray-600">
                 {(customStats?.mostFrequentCategory?.totalAmount || 0).toLocaleString('tr-TR', {
                   style: 'currency',
@@ -614,14 +630,14 @@ function StatisticsPage() {
 
       {/* Kategori Detay Modalı */}
       {selectedCategory && (
-        <CategoryDetailsModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          category={selectedCategory}
+      <CategoryDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        category={selectedCategory}
           startDate={startDate}
           endDate={endDate}
         />
-      )}
+        )}
     </div>
   );
 }
