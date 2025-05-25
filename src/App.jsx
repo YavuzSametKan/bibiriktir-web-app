@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { FinanceProvider } from './context/FinanceContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
@@ -14,6 +14,8 @@ import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import { CategoryProvider } from './context/CategoryContext';
 import { TransactionProvider } from './context/TransactionContext';
+import PageLoader from './components/common/PageLoader';
+import { useState, useEffect } from 'react';
 
 // Loading bileşeni
 function LoadingSpinner() {
@@ -21,6 +23,28 @@ function LoadingSpinner() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
+  );
+}
+
+// Sayfa geçiş animasyonu için wrapper
+function PageTransitionWrapper({ children }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500); // Minimum 500ms göster
+
+    return () => clearTimeout(timer);
+  }, [location]);
+
+  return (
+    <>
+      <PageLoader isVisible={isLoading} />
+      {children}
+    </>
   );
 }
 
@@ -36,18 +60,20 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return children;
+  return <PageTransitionWrapper>{children}</PageTransitionWrapper>;
 }
 
 // Genel route bileşeni
 function PublicRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  if (isAuthenticated) {
+  // Sadece dashboard'a yönlendirme yap, diğer durumlarda sayfayı yenileme
+  if (isAuthenticated && location.pathname === '/auth') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -107,55 +133,12 @@ function App() {
                 pauseOnHover
               />
               <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={
-                  <PublicRoute>
-                    <LandingPage />
-                  </PublicRoute>
-                } />
-                
-                <Route path="/auth" element={
-                  <PublicRoute>
-                    <AuthLayout>
-                      <AuthPage />
-                    </AuthLayout>
-                  </PublicRoute>
-                } />
-
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <DashboardPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/statistics" element={
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <StatisticsPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/goals" element={
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <GoalsPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/monthly-review" element={
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <MonthlyReviewPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                } />
-
-                {/* 404 Sayfası */}
+                <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+                <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><MainLayout><DashboardPage /></MainLayout></ProtectedRoute>} />
+                <Route path="/statistics" element={<ProtectedRoute><MainLayout><StatisticsPage /></MainLayout></ProtectedRoute>} />
+                <Route path="/goals" element={<ProtectedRoute><MainLayout><GoalsPage /></MainLayout></ProtectedRoute>} />
+                <Route path="/monthly-review" element={<ProtectedRoute><MainLayout><MonthlyReviewPage /></MainLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Router>
