@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getMonth, getYear, subMonths, addMonths, format, parse } from 'date-fns';
 import { ChartBarIcon, ArrowUpIcon, ArrowDownIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Line, Pie } from 'react-chartjs-2';
@@ -23,6 +23,11 @@ import { useFinance } from '../context/FinanceContext';
 import Navbar from '../components/common/Navbar';
 import { tr } from 'date-fns/locale';
 import { useTransactions } from '../context/TransactionContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSpring, animated } from 'react-spring';
+import { toast } from 'react-toastify';
+import CategoryTransactionsModal from '../components/dashboard/CategoryTransactionsModal';
+import WelcomeOverlay from '../components/common/WelcomeOverlay';
 
 ChartJS.register(
   CategoryScale,
@@ -52,8 +57,14 @@ function DashboardPage() {
     handleDeleteCategory
   } = useFinance();
 
-  const { transactions, previousMonthTransactions, loading, selectedDate, setSelectedDate } = useTransactions();
+  const { transactions, previousMonthTransactions, loading, selectedDate, setSelectedDate, setTransactions } = useTransactions();
   const [showCharts, setShowCharts] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [direction, setDirection] = useState(0);
+  const [shouldAnimateNumbers, setShouldAnimateNumbers] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isCategoryTransactionsModalOpen, setIsCategoryTransactionsModalOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const {
     currentMonthIncome,
@@ -202,23 +213,99 @@ function DashboardPage() {
     );
   });
 
+  // Animasyonlu sayı geçişi için spring
+  const incomeSpring = useSpring({
+    from: { value: 0 },
+    to: { value: currentMonthIncome },
+    config: { duration: 2000 }, // 2 saniye
+    reset: true,
+    immediate: !shouldAnimateNumbers
+  });
+
+  const expenseSpring = useSpring({
+    from: { value: 0 },
+    to: { value: currentMonthExpense },
+    config: { duration: 2000 }, // 2 saniye
+    reset: true,
+    immediate: !shouldAnimateNumbers
+  });
+
+  const handleDateChange = async (newDate) => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setShouldAnimateNumbers(true);
+    const oldDate = selectedDate;
+    setDirection(newDate > oldDate ? 1 : -1);
+    setSelectedDate(newDate);
+
+    // Animasyonun tamamlanması için bekle
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setShouldAnimateNumbers(false);
+    }, 500);
+  };
+
+  // İşlem kartları için animasyon varyantları
+  const cardVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? '100%' : '-100%',
+      opacity: 1
+    }),
+    center: {
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? '100%' : '-100%',
+      opacity: 1
+    })
+  };
+
+  const handleCategoryClick = (categoryName, type) => {
+    const categoryTransactions = transactions.filter(t => 
+      t.category?.name === categoryName && t.type === type
+    );
+    
+    if (categoryTransactions.length > 0) {
+      setSelectedCategory({ name: categoryName, type, transactions: categoryTransactions });
+      setIsCategoryTransactionsModalOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    // Kullanıcının daha önce giriş yapıp yapmadığını kontrol et
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+      // Kullanıcının hoş geldin ekranını gördüğünü kaydet
+      localStorage.setItem('hasSeenWelcome', 'true');
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
+      <WelcomeOverlay isVisible={showWelcome} onClose={() => setShowWelcome(false)} />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Ana Sayfa</h1>
           <MonthSelector
             selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
+            onDateChange={handleDateChange}
+            disabled={isTransitioning}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-green-50 rounded-lg p-6 shadow">
             <h3 className="text-lg font-medium text-green-800 mb-2">Toplam Gelir</h3>
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {currentMonthIncome.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-            </div>
+            <animated.div className="text-3xl font-bold text-green-600 mb-2">
+              {incomeSpring.value.to((val) => 
+                val.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+              )}
+            </animated.div>
             <div className="flex items-center text-sm">
               {previousMonthIncome === 0 ? (
                 <span className="text-gray-600">Önceki aya ait veri bulunmuyor</span>
@@ -243,9 +330,11 @@ function DashboardPage() {
 
           <div className="bg-red-50 rounded-lg p-6 shadow">
             <h3 className="text-lg font-medium text-red-800 mb-2">Toplam Gider</h3>
-            <div className="text-3xl font-bold text-red-600 mb-2">
-              {currentMonthExpense.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-            </div>
+            <animated.div className="text-3xl font-bold text-red-600 mb-2">
+              {expenseSpring.value.to((val) => 
+                val.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })
+              )}
+            </animated.div>
             <div className="flex items-center text-sm">
               {previousMonthExpense === 0 ? (
                 <span className="text-gray-600">Önceki aya ait veri bulunmuyor</span>
@@ -275,6 +364,7 @@ function DashboardPage() {
             <button
               onClick={() => setShowCharts(!showCharts)}
               className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+              disabled={isTransitioning}
             >
               {showCharts ? (
                 <>
@@ -289,158 +379,203 @@ function DashboardPage() {
               )}
             </button>
           </div>
-          {showCharts && (
-            <div className="grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out mb-8">
-              <div className="h-64 bg-white rounded-lg p-4 shadow">
-                <Line
-                  data={lineChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        position: 'top',
+          <div className={`grid grid-cols-1 gap-6 transition-all duration-500 ease-in-out overflow-hidden ${
+            showCharts ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="h-64 bg-white rounded-lg p-4 shadow">
+              <Line
+                data={lineChartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
                       },
                     },
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                        ticks: {
-                          callback: (value) => value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }),
-                        },
-                      },
-                    },
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.keys(incomePieData.labels).length > 0 ? (
-                  <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
-                    <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
-                    <div className="w-80 h-80">
-                      <Pie
-                        data={incomePieData}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              display: true,
-                              position: 'right',
-                              labels: {
-                                padding: 8,
-                                font: {
-                                  size: 13
-                                }
-                              }
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: (context) => {
-                                  const value = context.raw;
-                                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                  const percentage = ((value / total) * 100).toFixed(1);
-                                  return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
-                                },
-                              },
-                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                              padding: 8,
-                              titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                              },
-                              bodyFont: {
-                                size: 13
-                              }
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
-                    <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
-                  </div>
-                )}
-
-                {Object.keys(expensePieData.labels).length > 0 ? (
-                  <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
-                    <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
-                    <div className="w-80 h-80">
-                      <Pie
-                        data={expensePieData}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              display: true,
-                              position: 'right',
-                              labels: {
-                                padding: 8,
-                                font: {
-                                  size: 13
-                                }
-                              }
-                            },
-                            tooltip: {
-                              callbacks: {
-                                label: (context) => {
-                                  const value = context.raw;
-                                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                  const percentage = ((value / total) * 100).toFixed(1);
-                                  return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
-                                },
-                              },
-                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                              padding: 8,
-                              titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                              },
-                              bodyFont: {
-                                size: 13
-                              }
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
-                    <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
-                  </div>
-                )}
-              </div>
+                  },
+                }}
+              />
             </div>
-          )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.keys(incomePieData.labels).length > 0 ? (
+                <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
+                  <h4 className="text-center text-lg font-medium text-green-800 mb-1">Gelir Dağılımı</h4>
+                  <div className="w-80 h-80">
+                    <Pie
+                      data={incomePieData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                              padding: 8,
+                              font: {
+                                size: 13
+                              }
+                            }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (context) => {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                              },
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 8,
+                            titleFont: {
+                              size: 14,
+                              weight: 'bold'
+                            },
+                            bodyFont: {
+                              size: 13
+                            }
+                          },
+                        },
+                        onClick: (event, elements) => {
+                          if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const categoryName = incomePieData.labels[index];
+                            handleCategoryClick(categoryName, 'income');
+                          }
+                        },
+                        onHover: (event, elements) => {
+                          event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
+                  <p className="text-gray-500">Bu ay için gelir verisi bulunmamaktadır.</p>
+                </div>
+              )}
+
+              {Object.keys(expensePieData.labels).length > 0 ? (
+                <div className="h-80 flex flex-col items-center bg-white rounded-lg p-4 shadow">
+                  <h4 className="text-center text-lg font-medium text-red-800 mb-1">Gider Dağılımı</h4>
+                  <div className="w-80 h-80">
+                    <Pie
+                      data={expensePieData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                              padding: 8,
+                              font: {
+                                size: 13
+                              }
+                            }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (context) => {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })} (${percentage}%)`;
+                              },
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 8,
+                            titleFont: {
+                              size: 14,
+                              weight: 'bold'
+                            },
+                            bodyFont: {
+                              size: 13
+                            }
+                          },
+                        },
+                        onClick: (event, elements) => {
+                          if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const categoryName = expensePieData.labels[index];
+                            handleCategoryClick(categoryName, 'expense');
+                          }
+                        },
+                        onHover: (event, elements) => {
+                          event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="h-96 flex items-center justify-center bg-white rounded-lg shadow">
+                  <p className="text-gray-500">Bu ay için gider verisi bulunmamaktadır.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
               <h2 className="text-xl font-semibold text-gray-900">İşlemler</h2>
-              <CategoryManagementButton onClick={() => setIsCategoryModalOpen(true)} />
+              <CategoryManagementButton 
+                onClick={() => setIsCategoryModalOpen(true)}
+                disabled={isTransitioning}
+              />
             </div>
-            <AddTransactionButton onClick={() => setIsTransactionModalOpen(true)} />
-          </div>
-          {filteredTransactions.length > 0 ? (
-            <TransactionList
-              transactions={filteredTransactions}
-              categories={categories}
-              onTransactionClick={(transaction) => {
-                setSelectedTransaction(transaction);
-                setIsTransactionModalOpen(true);
-              }}
+            <AddTransactionButton 
+              onClick={() => setIsTransactionModalOpen(true)}
+              disabled={isTransitioning}
             />
-          ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
-            </div>
-          )}
+          </div>
+          
+          <div className="relative overflow-hidden">
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={selectedDate.toISOString()}
+                custom={direction}
+                variants={cardVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 }
+                }}
+                className="w-full"
+              >
+                {filteredTransactions.length > 0 ? (
+                  <TransactionList
+                    transactions={filteredTransactions}
+                    categories={categories}
+                    onTransactionClick={(transaction) => {
+                      setSelectedTransaction(transaction);
+                      setIsTransactionModalOpen(true);
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-12 bg-white rounded-lg shadow">
+                    <p className="text-xl text-gray-600">Bu ay için veri bulunmamaktadır.</p>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -461,6 +596,16 @@ function DashboardPage() {
         onAdd={handleAddCategory}
         onUpdate={handleUpdateCategory}
         onDelete={handleDeleteCategory}
+      />
+
+      <CategoryTransactionsModal
+        isOpen={isCategoryTransactionsModalOpen}
+        onClose={() => {
+          setIsCategoryTransactionsModalOpen(false);
+          setSelectedCategory(null);
+        }}
+        category={selectedCategory}
+        transactions={selectedCategory?.transactions || []}
       />
     </div>
   );

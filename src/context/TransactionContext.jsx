@@ -74,7 +74,9 @@ export const TransactionProvider = ({ children }) => {
     try {
       const response = await transactionService.createTransaction(transactionData);
       if (response.success) {
-        await loadTransactions();
+        // State'i güncelle
+        setCurrentMonthTransactions(prev => [...prev, response.data]);
+        setTransactions(prev => [...prev, response.data]);
         return true;
       }
     } catch (error) {
@@ -93,7 +95,17 @@ export const TransactionProvider = ({ children }) => {
     try {
       const response = await transactionService.updateTransaction(id, transactionData);
       if (response.success) {
-        await loadTransactions();
+        // State'i güncelle
+        setCurrentMonthTransactions(prev =>
+          prev.map(transaction =>
+            transaction._id === id ? response.data : transaction
+          )
+        );
+        setTransactions(prev =>
+          prev.map(transaction =>
+            transaction._id === id ? response.data : transaction
+          )
+        );
         return true;
       }
     } catch (error) {
@@ -112,7 +124,13 @@ export const TransactionProvider = ({ children }) => {
     try {
       const response = await transactionService.deleteTransaction(id);
       if (response.success) {
-        await loadTransactions();
+        // State'i güncelle
+        setCurrentMonthTransactions(prev =>
+          prev.filter(transaction => transaction._id !== id)
+        );
+        setTransactions(prev =>
+          prev.filter(transaction => transaction._id !== id)
+        );
         return true;
       }
     } catch (error) {
