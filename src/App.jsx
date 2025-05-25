@@ -16,6 +16,7 @@ import { CategoryProvider } from './context/CategoryContext';
 import { TransactionProvider } from './context/TransactionContext';
 import PageLoader from './components/common/PageLoader';
 import { useState, useEffect } from 'react';
+import AccountSettingsPage from './pages/AccountSettingsPage';
 
 // Loading bileşeni
 function LoadingSpinner() {
@@ -139,6 +140,7 @@ function App() {
                 <Route path="/statistics" element={<ProtectedRoute><MainLayout><StatisticsPage /></MainLayout></ProtectedRoute>} />
                 <Route path="/goals" element={<ProtectedRoute><MainLayout><GoalsPage /></MainLayout></ProtectedRoute>} />
                 <Route path="/monthly-review" element={<ProtectedRoute><MainLayout><MonthlyReviewPage /></MainLayout></ProtectedRoute>} />
+                <Route path="/account-settings" element={<ProtectedRoute><MainLayout><AccountSettingsPage /></MainLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Router>
